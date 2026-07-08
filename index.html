@@ -732,6 +732,22 @@
       height: 17px;
     }
 
+    .edit-btn {
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      background: #eff6ff;
+      color: #15577e;
+      min-height: 36px;
+      padding: 7px 10px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      cursor: pointer;
+      font-weight: 750;
+      white-space: nowrap;
+    }
+
     .stock-tile .delete-btn {
       margin-top: 6px;
       width: 100%;
@@ -1018,7 +1034,7 @@
         </div>
 
         <div class="screen" id="purchases">
-          <div class="topline"><h1>Purchases & Bills</h1><div class="actions"><button class="delete-btn" id="deleteAllPurchases"><span data-icon="trash"></span>Remove</button><button class="btn primary"><span data-icon="plus"></span>Record Bill</button></div></div>
+          <div class="topline"><h1>Purchases & Bills</h1><div class="actions"><button class="delete-btn" id="deleteAllPurchases"><span data-icon="trash"></span>Remove</button><button class="btn primary" id="addPurchase"><span data-icon="plus"></span>Record Bill</button></div></div>
           <article class="panel">
             <div class="panel-title">Supplier Bills</div>
             <div style="overflow:auto"><table><thead><tr><th>Bill No.</th><th>Vendor</th><th>Date</th><th>Taxable</th><th>GST Input</th><th>Status</th><th>Action</th></tr></thead><tbody id="purchaseRows"></tbody></table></div>
@@ -1026,7 +1042,7 @@
         </div>
 
         <div class="screen" id="inventory">
-          <div class="topline"><h1>Inventory (Stock)</h1><div class="actions"><button class="delete-btn" id="deleteAllInventory"><span data-icon="trash"></span>Remove</button><button class="btn primary"><span data-icon="plus"></span>Add Product</button></div></div>
+          <div class="topline"><h1>Inventory (Stock)</h1><div class="actions"><button class="delete-btn" id="deleteAllInventory"><span data-icon="trash"></span>Remove</button><button class="btn primary" id="addProduct"><span data-icon="plus"></span>Add Product</button></div></div>
           <div class="inventory-grid" id="stockTiles"></div>
           <article class="panel" style="margin-top:16px">
             <div class="panel-title">Stock Register</div>
@@ -1035,7 +1051,7 @@
         </div>
 
         <div class="screen" id="expenses">
-          <div class="topline"><h1>Expenses</h1><div class="actions"><button class="delete-btn" id="deleteAllExpenses"><span data-icon="trash"></span>Remove</button><button class="btn primary"><span data-icon="plus"></span>Add Expense</button></div></div>
+          <div class="topline"><h1>Expenses</h1><div class="actions"><button class="delete-btn" id="deleteAllExpenses"><span data-icon="trash"></span>Remove</button><button class="btn primary" id="addExpense"><span data-icon="plus"></span>Add Expense</button></div></div>
           <div class="split">
             <article class="panel"><div class="panel-title">Expense Entry</div><div class="panel-body form-grid" style="grid-template-columns:1fr 1fr"><label>Category<select><option>Rent</option><option>Utilities</option><option>Supplies</option></select></label><label>Amount<input value="12500"></label><label>Date<input type="date"></label><label>GST<input value="18"></label></div></article>
             <article class="panel"><div class="panel-title">Monthly Expense Summary</div><div class="panel-body donut-area"><div class="donut"></div><div class="legend"><span><b>Rent</b><strong>₹18,500</strong></span><span><b>Utilities</b><strong>₹8,400</strong></span><span><b>Supplies</b><strong>₹12,700</strong></span><span><b>Others</b><strong>₹9,900</strong></span></div></div></article>
@@ -1047,12 +1063,12 @@
         </div>
 
         <div class="screen" id="customers">
-          <div class="topline"><h1>Customer Management</h1><div class="actions"><button class="delete-btn" id="deleteAllCustomers"><span data-icon="trash"></span>Remove</button><button class="btn primary"><span data-icon="plus"></span>Add Customer</button></div></div>
+          <div class="topline"><h1>Customer Management</h1><div class="actions"><button class="delete-btn" id="deleteAllCustomers"><span data-icon="trash"></span>Remove</button><button class="btn primary" id="addCustomer"><span data-icon="plus"></span>Add Customer</button></div></div>
           <article class="panel"><div class="panel-title">Customers</div><div style="overflow:auto"><table><thead><tr><th>Name</th><th>GSTIN</th><th>Phone</th><th>Outstanding</th><th>Status</th><th>Action</th></tr></thead><tbody id="customerRows"></tbody></table></div></article>
         </div>
 
         <div class="screen" id="vendors">
-          <div class="topline"><h1>Vendor Management</h1><div class="actions"><button class="delete-btn" id="deleteAllVendors"><span data-icon="trash"></span>Remove</button><button class="btn primary"><span data-icon="plus"></span>Add Vendor</button></div></div>
+          <div class="topline"><h1>Vendor Management</h1><div class="actions"><button class="delete-btn" id="deleteAllVendors"><span data-icon="trash"></span>Remove</button><button class="btn primary" id="addVendor"><span data-icon="plus"></span>Add Vendor</button></div></div>
           <article class="panel"><div class="panel-title">Vendors</div><div style="overflow:auto"><table><thead><tr><th>Name</th><th>GSTIN</th><th>Phone</th><th>Payable</th><th>Status</th><th>Action</th></tr></thead><tbody id="vendorRows"></tbody></table></div></article>
         </div>
 
@@ -1076,7 +1092,7 @@
         </div>
 
         <div class="screen" id="settings">
-          <div class="topline"><h1>Settings</h1><div class="actions"><button class="delete-btn" id="resetSettings"><span data-icon="trash"></span>Remove</button><button class="btn primary"><span data-icon="save"></span>Save Settings</button></div></div>
+          <div class="topline"><h1>Settings</h1><div class="actions"><button class="delete-btn" id="resetSettings"><span data-icon="trash"></span>Remove</button><button class="btn primary" id="saveSettings"><span data-icon="save"></span>Save Settings</button></div></div>
           <article class="panel"><div class="panel-title">Business Profile</div><div class="panel-body form-grid"><label>Business Name<input value="THOOVAM"></label><label>GSTIN<input value="32THOOVAM2026Z5"></label><label>State<select><option>Kerala</option><option>Tamil Nadu</option><option>Karnataka</option></select></label><label>Currency<input value="INR - ₹"></label><label style="grid-column:1/-1">Invoice Footer<textarea>Thank you for your business.</textarea></label></div></article>
         </div>
       </section>
@@ -1366,6 +1382,374 @@
     fillTables();
     createLine("Product Box 1", 2, 12500, 18);
     createLine("Product Comer-fon", 1, 18500, 18);
+  </script>
+  <script>
+    (() => {
+      const money = value => "₹" + Math.round(Number(value) || 0).toLocaleString("en-IN");
+      const read = (key, fallback) => JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback));
+      const write = (key, value) => localStorage.setItem(key, JSON.stringify(value));
+      const ask = (label, value = "") => prompt(label, value ?? "");
+      const todayText = () => new Date().toISOString().slice(0, 10);
+      const defaults = {
+        invoices: [],
+        purchases: [
+          ["PB-008", "Kairali Supplies", "08/12/2023", 82500, 14850, "Pending"],
+          ["PB-009", "Coastal Packaging", "07/12/2023", 14200, 2556, "Paid"],
+          ["PB-010", "Prime Utilities", "06/12/2023", 9800, 1764, "Pending"]
+        ],
+        inventory: [
+          ["Product Box 1", "THV-PB1", 40, 50, 42000],
+          ["Key Product 2", "THV-KP2", 30, 40, 31000],
+          ["Product Comer-fon", "THV-PCF", 10, 20, 27000],
+          ["Product Groedr Supply", "THV-PGS", 20, 20, 54000],
+          ["Product Sals", "THV-PSL", 30, 10, 76000]
+        ],
+        expenses: [
+          ["EXP-001", "Rent", "08/12/2023", 18500, 3330],
+          ["EXP-002", "Utilities", "07/12/2023", 8400, 1512],
+          ["EXP-003", "Supplies", "06/12/2023", 12700, 2286]
+        ],
+        customers: [
+          ["Ananya Traders", "32ABCDE1234F1Z5", "+91 98765 43210", 18500, "Active"],
+          ["Malabar Stores", "32EFGHI1234K1Z2", "+91 98765 11122", 0, "Active"],
+          ["Urban Retail", "29JKLMN1234P1Z8", "+91 98470 33344", 19700, "Due"]
+        ],
+        vendors: [
+          ["Kairali Supplies", "32SUPPL1234A1Z1", "+91 98950 12000", 82500, "Pending"],
+          ["Coastal Packaging", "32PACK1234B1Z2", "+91 94470 77440", 14200, "Paid"],
+          ["Prime Utilities", "32UTIL1234C1Z3", "+91 98460 55660", 9800, "Pending"]
+        ],
+        settings: {
+          businessName: "THOOVAM",
+          gstin: "32THOOVAM2026Z5",
+          state: "Kerala",
+          currency: "INR - ₹",
+          footer: "Thank you for your business."
+        }
+      };
+
+      const data = {
+        invoices: read("thoovamInvoices", defaults.invoices),
+        purchases: read("thoovamPurchases", defaults.purchases),
+        inventory: read("thoovamInventory", defaults.inventory),
+        expenses: read("thoovamExpenses", defaults.expenses),
+        customers: read("thoovamCustomers", defaults.customers),
+        vendors: read("thoovamVendors", defaults.vendors),
+        settings: read("thoovamSettings", defaults.settings)
+      };
+
+      function replaceButton(id, handler) {
+        const oldButton = document.getElementById(id);
+        if (!oldButton) return;
+        const newButton = oldButton.cloneNode(true);
+        oldButton.replaceWith(newButton);
+        newButton.addEventListener("click", handler);
+      }
+
+      function actionButtons(type, index) {
+        return `<button class="edit-btn" data-edit-${type}="${index}">Edit</button> <button class="delete-btn" data-remove-${type}="${index}">${icons.trash} Delete</button>`;
+      }
+
+      function saveAll() {
+        write("thoovamInvoices", data.invoices);
+        write("thoovamPurchases", data.purchases);
+        write("thoovamInventory", data.inventory);
+        write("thoovamExpenses", data.expenses);
+        write("thoovamCustomers", data.customers);
+        write("thoovamVendors", data.vendors);
+        write("thoovamSettings", data.settings);
+      }
+
+      function makeInvoiceHistory() {
+        if (document.getElementById("invoiceHistoryRows")) return;
+        document.querySelector("#sales .invoice-layout").insertAdjacentHTML("afterend", `
+          <article class="panel no-print" style="margin-top:16px">
+            <div class="panel-title">Saved Invoices</div>
+            <div style="overflow:auto">
+              <table>
+                <thead><tr><th>Invoice No.</th><th>Date</th><th>Customer</th><th>Amount</th><th>Action</th></tr></thead>
+                <tbody id="invoiceHistoryRows"></tbody>
+              </table>
+            </div>
+          </article>
+        `);
+      }
+
+      function enhanceInvoiceTable() {
+        const table = document.querySelector("#invoicePreview table");
+        if (table) table.querySelector("thead").innerHTML = "<tr><th>Item</th><th>Qty</th><th>Unit</th><th>Rate</th><th>GST</th><th>Total</th></tr>";
+      }
+
+      function createEnhancedLine(item = "", qty = 1, unit = "Kg", rate = 0, gst = 18) {
+        const lineItems = document.getElementById("lineItems");
+        const row = document.createElement("div");
+        row.className = "line";
+        row.style.gridTemplateColumns = "1.3fr .5fr .7fr .8fr .6fr 42px";
+        row.innerHTML = `
+          <label>Item<input class="li-item" value="${item}"></label>
+          <label>Qty<input class="li-qty" type="number" min="0" value="${qty}"></label>
+          <label>Unit<select class="li-unit"><option>Kg</option><option>Liter</option><option>Pcs</option><option>Box</option></select></label>
+          <label>Rate<input class="li-rate" type="number" min="0" value="${rate}"></label>
+          <label>GST %<input class="li-gst" type="number" min="0" value="${gst}"></label>
+          <button type="button" class="remove" aria-label="Remove item">×</button>
+        `;
+        row.querySelector(".li-unit").value = unit;
+        row.querySelectorAll("input, select").forEach(input => input.addEventListener("input", updateEnhancedInvoice));
+        row.querySelector(".remove").addEventListener("click", () => {
+          if (lineItems.children.length > 1) row.remove();
+          updateEnhancedInvoice();
+        });
+        lineItems.appendChild(row);
+      }
+
+      function updateEnhancedInvoice() {
+        document.getElementById("pvInvoiceNo").textContent = document.getElementById("invoiceNo").value || "Draft Invoice";
+        document.getElementById("pvInvoiceDate").textContent = document.getElementById("invoiceDate").value || todayText();
+        document.getElementById("pvCustomer").textContent = document.getElementById("customerName").value || "Customer";
+        document.getElementById("pvGst").textContent = "GSTIN: " + (document.getElementById("customerGst").value || "-");
+        document.getElementById("pvAddress").textContent = document.getElementById("customerAddress").value || "-";
+        let subtotal = 0;
+        let gstTotal = 0;
+        const rows = [...document.querySelectorAll("#lineItems .line")].map(row => {
+          const item = row.querySelector(".li-item")?.value || "Item";
+          const qty = Number(row.querySelector(".li-qty")?.value) || 0;
+          const unit = row.querySelector(".li-unit")?.value || "Pcs";
+          const rate = Number(row.querySelector(".li-rate")?.value) || 0;
+          const gst = Number(row.querySelector(".li-gst")?.value) || 0;
+          const base = qty * rate;
+          const tax = base * gst / 100;
+          subtotal += base;
+          gstTotal += tax;
+          return `<tr><td>${item}</td><td>${qty}</td><td>${unit}</td><td>${money(rate)}</td><td>${gst}%</td><td>${money(base + tax)}</td></tr>`;
+        }).join("");
+        document.getElementById("previewItems").innerHTML = rows;
+        document.getElementById("subTotal").textContent = money(subtotal);
+        document.getElementById("gstTotal").textContent = money(gstTotal);
+        document.getElementById("grandTotal").textContent = money(subtotal + gstTotal);
+      }
+
+      function invoicePayload() {
+        const items = [...document.querySelectorAll("#lineItems .line")].map(row => ({
+          item: row.querySelector(".li-item")?.value || "",
+          qty: Number(row.querySelector(".li-qty")?.value) || 0,
+          unit: row.querySelector(".li-unit")?.value || "Pcs",
+          rate: Number(row.querySelector(".li-rate")?.value) || 0,
+          gst: Number(row.querySelector(".li-gst")?.value) || 0
+        }));
+        const total = items.reduce((sum, line) => sum + (line.qty * line.rate * (1 + line.gst / 100)), 0);
+        return {
+          no: document.getElementById("invoiceNo").value || `THV-INV-${Date.now()}`,
+          date: document.getElementById("invoiceDate").value || todayText(),
+          customer: document.getElementById("customerName").value || "Customer",
+          gstin: document.getElementById("customerGst").value || "",
+          address: document.getElementById("customerAddress").value || "",
+          items,
+          total
+        };
+      }
+
+      function loadInvoice(invoice) {
+        document.getElementById("invoiceNo").value = invoice.no;
+        document.getElementById("invoiceDate").value = invoice.date;
+        document.getElementById("customerName").value = invoice.customer;
+        document.getElementById("customerGst").value = invoice.gstin;
+        document.getElementById("customerAddress").value = invoice.address;
+        document.getElementById("lineItems").innerHTML = "";
+        invoice.items.forEach(line => createEnhancedLine(line.item, line.qty, line.unit, line.rate, line.gst));
+        if (!invoice.items.length) createEnhancedLine("", 1, "Kg", 0, 18);
+        updateEnhancedInvoice();
+        showScreen("sales");
+      }
+
+      function renderAll() {
+        document.getElementById("inventoryTable").innerHTML = data.inventory.map(([name,, qty, reorder]) => `
+          <tr><td>${name}</td><td>${qty}</td><td>${reorder > qty ? '<span class="badge low">Low-stock</span>' : reorder}</td></tr>
+        `).join("");
+        document.getElementById("stockTiles").innerHTML = data.inventory.slice(0, 4).map(([name,, qty, reorder, value], index) => `
+          <div class="stock-tile"><p>${name}</p><strong>${qty} units</strong><span>${money(value)} stock value</span><span class="badge ${qty <= reorder ? "low" : "paid"}">${qty <= reorder ? "Low-stock" : "Healthy"}</span>${actionButtons("stock", index)}</div>
+        `).join("");
+        document.getElementById("stockRows").innerHTML = data.inventory.map(([name, sku, qty, reorder, value], index) => `
+          <tr><td>${name}</td><td>${sku}</td><td>${qty}</td><td>${reorder}</td><td>${money(value)}</td><td><span class="badge ${qty <= reorder ? "low" : "paid"}">${qty <= reorder ? "Low-stock" : "Healthy"}</span></td><td>${actionButtons("stock", index)}</td></tr>
+        `).join("");
+        document.getElementById("purchaseRows").innerHTML = data.purchases.map(([bill, vendor, date, taxable, gst, status], index) => `
+          <tr><td>${bill}</td><td>${vendor}</td><td>${date}</td><td>${money(taxable)}</td><td>${money(gst)}</td><td><span class="badge ${status === "Paid" ? "paid" : "pending"}">${status}</span></td><td>${actionButtons("purchase", index)}</td></tr>
+        `).join("");
+        document.getElementById("expenseRows").innerHTML = data.expenses.map(([no, category, date, amount, gst], index) => `
+          <tr><td>${no}</td><td>${category}</td><td>${date}</td><td>${money(amount)}</td><td>${money(gst)}</td><td>${actionButtons("expense", index)}</td></tr>
+        `).join("");
+        document.getElementById("customerRows").innerHTML = data.customers.map(([name, gst, phone, due, status], index) => `
+          <tr><td>${name}</td><td>${gst}</td><td>${phone}</td><td>${money(due)}</td><td><span class="badge ${due ? "pending" : "paid"}">${status}</span></td><td>${actionButtons("customer", index)}</td></tr>
+        `).join("");
+        document.getElementById("vendorRows").innerHTML = data.vendors.map(([name, gst, phone, due, status], index) => `
+          <tr><td>${name}</td><td>${gst}</td><td>${phone}</td><td>${money(due)}</td><td><span class="badge ${status === "Paid" ? "paid" : "pending"}">${status}</span></td><td>${actionButtons("vendor", index)}</td></tr>
+        `).join("");
+        document.getElementById("transactionsTable").innerHTML = [
+          ...data.invoices.map(inv => [inv.date, `Invoice ${inv.no}`, inv.total, "Paid"]),
+          ...data.purchases.map(row => [row[2], `Purchase ${row[0]}`, row[3], row[5]])
+        ].slice(-8).reverse().map(([date, party, amount, status]) => `
+          <tr><td>${date}</td><td>${party}</td><td>${money(amount)}</td><td><span class="badge ${status === "Paid" ? "paid" : "pending"}">${status}</span></td></tr>
+        `).join("");
+        document.getElementById("invoiceHistoryRows").innerHTML = data.invoices.map((invoice, index) => `
+          <tr><td>${invoice.no}</td><td>${invoice.date}</td><td>${invoice.customer}</td><td>${money(invoice.total)}</td><td><button class="edit-btn" data-edit-invoice="${index}">Edit</button> <button class="btn" data-print-invoice="${index}">${icons.print} Reprint</button> <button class="delete-btn" data-delete-invoice="${index}">${icons.trash} Delete</button></td></tr>
+        `).join("");
+      }
+
+      function editPurchase(index = -1) {
+        const row = data.purchases[index] || [`PB-${String(data.purchases.length + 11).padStart(3, "0")}`, "", todayText(), 0, 0, "Pending"];
+        const bill = ask("Bill number", row[0]); if (bill === null) return;
+        const vendor = ask("Vendor name", row[1]); if (vendor === null) return;
+        const date = ask("Date", row[2]); if (date === null) return;
+        const taxable = Number(ask("Taxable amount", row[3])) || 0;
+        const gst = Number(ask("GST input amount", row[4])) || 0;
+        const status = ask("Status: Paid or Pending", row[5]) || "Pending";
+        data.purchases[index >= 0 ? index : data.purchases.length] = [bill, vendor, date, taxable, gst, status];
+        saveAll(); renderAll();
+      }
+
+      function editProduct(index = -1) {
+        const row = data.inventory[index] || ["", `THV-${Date.now().toString().slice(-4)}`, 0, 0, 0];
+        const name = ask("Product name", row[0]); if (name === null) return;
+        const sku = ask("SKU", row[1]); if (sku === null) return;
+        const qty = Number(ask("Current quantity", row[2])) || 0;
+        const reorder = Number(ask("Reorder level", row[3])) || 0;
+        const value = Number(ask("Stock value", row[4])) || 0;
+        data.inventory[index >= 0 ? index : data.inventory.length] = [name, sku, qty, reorder, value];
+        saveAll(); renderAll();
+      }
+
+      function editExpense(index = -1) {
+        const row = data.expenses[index] || [`EXP-${String(data.expenses.length + 1).padStart(3, "0")}`, "", todayText(), 0, 0];
+        const no = ask("Expense number", row[0]); if (no === null) return;
+        const category = ask("Category", row[1]); if (category === null) return;
+        const date = ask("Date", row[2]); if (date === null) return;
+        const amount = Number(ask("Amount", row[3])) || 0;
+        const gst = Number(ask("GST amount", row[4])) || 0;
+        data.expenses[index >= 0 ? index : data.expenses.length] = [no, category, date, amount, gst];
+        saveAll(); renderAll();
+      }
+
+      function editParty(type, index = -1) {
+        const list = data[type];
+        const row = list[index] || ["", "", "", 0, "Active"];
+        const name = ask(type === "customers" ? "Customer name" : "Vendor name", row[0]); if (name === null) return;
+        const gst = ask("GSTIN", row[1]); if (gst === null) return;
+        const phone = ask("Phone", row[2]); if (phone === null) return;
+        const due = Number(ask(type === "customers" ? "Outstanding amount" : "Payable amount", row[3])) || 0;
+        const status = ask("Status", row[4]) || "Active";
+        list[index >= 0 ? index : list.length] = [name, gst, phone, due, status];
+        saveAll(); renderAll();
+      }
+
+      function removeItem(listName, index, label) {
+        if (!data[listName][index]) return;
+        if (!confirm(`Delete this ${label}?`)) return;
+        data[listName].splice(index, 1);
+        saveAll(); renderAll();
+      }
+
+      function loadSettings() {
+        const fields = document.querySelectorAll("#settings input, #settings textarea, #settings select");
+        if (fields[0]) fields[0].value = data.settings.businessName || "";
+        if (fields[1]) fields[1].value = data.settings.gstin || "";
+        if (fields[2]) fields[2].value = data.settings.state || "Kerala";
+        if (fields[3]) fields[3].value = data.settings.currency || "INR - ₹";
+        if (fields[4]) fields[4].value = data.settings.footer || "";
+      }
+
+      function saveSettings() {
+        const fields = document.querySelectorAll("#settings input, #settings textarea, #settings select");
+        data.settings = {
+          businessName: fields[0]?.value || "",
+          gstin: fields[1]?.value || "",
+          state: fields[2]?.value || "",
+          currency: fields[3]?.value || "",
+          footer: fields[4]?.value || ""
+        };
+        saveAll();
+        alert("Settings saved in this browser.");
+      }
+
+      makeInvoiceHistory();
+      enhanceInvoiceTable();
+      document.getElementById("lineItems").innerHTML = "";
+      createEnhancedLine("Product Box 1", 2, "Kg", 12500, 18);
+      createEnhancedLine("Product Comer-fon", 1, "Liter", 18500, 18);
+      ["invoiceNo", "invoiceDate", "customerName", "customerGst", "customerAddress"].forEach(id => document.getElementById(id).addEventListener("input", updateEnhancedInvoice));
+
+      replaceButton("addLine", () => { createEnhancedLine("", 1, "Kg", 0, 18); updateEnhancedInvoice(); });
+      if (!document.getElementById("findInvoice")) {
+        document.getElementById("saveInvoice").insertAdjacentHTML("afterend", '<button class="btn" id="findInvoice">Find Invoice</button>');
+      }
+      replaceButton("findInvoice", () => {
+        const search = ask("Enter invoice number or customer name", "");
+        if (!search) return;
+        const term = search.toLowerCase();
+        const invoice = data.invoices.find(saved => saved.no.toLowerCase().includes(term) || saved.customer.toLowerCase().includes(term));
+        if (!invoice) {
+          alert("No saved invoice found.");
+          return;
+        }
+        loadInvoice(invoice);
+      });
+      replaceButton("saveInvoice", () => {
+        const invoice = invoicePayload();
+        const existing = data.invoices.findIndex(saved => saved.no === invoice.no);
+        data.invoices[existing >= 0 ? existing : data.invoices.length] = invoice;
+        saveAll(); renderAll();
+        alert(`Invoice ${invoice.no} saved. You can edit or reprint it from Saved Invoices.`);
+      });
+      replaceButton("deleteInvoice", () => {
+        if (!confirm("Clear current invoice entry?")) return;
+        document.getElementById("invoiceNo").value = `THV-INV-${String(data.invoices.length + 1001)}`;
+        document.getElementById("invoiceDate").value = todayText();
+        document.getElementById("customerName").value = "";
+        document.getElementById("customerGst").value = "";
+        document.getElementById("customerAddress").value = "";
+        document.getElementById("lineItems").innerHTML = "";
+        createEnhancedLine("", 1, "Kg", 0, 18);
+        updateEnhancedInvoice();
+      });
+      replaceButton("printInvoice", () => window.print());
+      replaceButton("addPurchase", () => editPurchase());
+      replaceButton("addProduct", () => editProduct());
+      replaceButton("addExpense", () => editExpense());
+      replaceButton("addCustomer", () => editParty("customers"));
+      replaceButton("addVendor", () => editParty("vendors"));
+      replaceButton("saveSettings", saveSettings);
+      replaceButton("resetSettings", () => {
+        if (!confirm("Clear saved settings?")) return;
+        data.settings = defaults.settings;
+        saveAll(); loadSettings();
+      });
+
+      document.body.addEventListener("click", event => {
+        const target = event.target.closest("[data-edit-invoice], [data-print-invoice], [data-delete-invoice], [data-edit-purchase], [data-remove-purchase], [data-edit-stock], [data-remove-stock], [data-edit-expense], [data-remove-expense], [data-edit-customer], [data-remove-customer], [data-edit-vendor], [data-remove-vendor]");
+        if (!target) return;
+        if (target.dataset.editInvoice) loadInvoice(data.invoices[Number(target.dataset.editInvoice)]);
+        if (target.dataset.printInvoice) { loadInvoice(data.invoices[Number(target.dataset.printInvoice)]); setTimeout(() => window.print(), 100); }
+        if (target.dataset.deleteInvoice) removeItem("invoices", Number(target.dataset.deleteInvoice), "invoice");
+        if (target.dataset.editPurchase) editPurchase(Number(target.dataset.editPurchase));
+        if (target.dataset.removePurchase) removeItem("purchases", Number(target.dataset.removePurchase), "purchase bill");
+        if (target.dataset.editStock) editProduct(Number(target.dataset.editStock));
+        if (target.dataset.removeStock) removeItem("inventory", Number(target.dataset.removeStock), "product");
+        if (target.dataset.editExpense) editExpense(Number(target.dataset.editExpense));
+        if (target.dataset.removeExpense) removeItem("expenses", Number(target.dataset.removeExpense), "expense");
+        if (target.dataset.editCustomer) editParty("customers", Number(target.dataset.editCustomer));
+        if (target.dataset.removeCustomer) removeItem("customers", Number(target.dataset.removeCustomer), "customer");
+        if (target.dataset.editVendor) editParty("vendors", Number(target.dataset.editVendor));
+        if (target.dataset.removeVendor) removeItem("vendors", Number(target.dataset.removeVendor), "vendor");
+      });
+
+      replaceButton("deleteAllPurchases", () => { if (confirm("Remove all purchase bills?")) { data.purchases = []; saveAll(); renderAll(); } });
+      replaceButton("deleteAllInventory", () => { if (confirm("Remove all inventory products?")) { data.inventory = []; saveAll(); renderAll(); } });
+      replaceButton("deleteAllExpenses", () => { if (confirm("Remove all expenses?")) { data.expenses = []; saveAll(); renderAll(); } });
+      replaceButton("deleteAllCustomers", () => { if (confirm("Remove all customers?")) { data.customers = []; saveAll(); renderAll(); } });
+      replaceButton("deleteAllVendors", () => { if (confirm("Remove all vendors?")) { data.vendors = []; saveAll(); renderAll(); } });
+
+      loadSettings();
+      updateEnhancedInvoice();
+      renderAll();
+    })();
   </script>
 </body>
 </html>
