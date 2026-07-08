@@ -1,0 +1,1219 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>THOOVAM Billing & Accounts</title>
+  <style>
+    :root {
+      --ink: #111827;
+      --muted: #64748b;
+      --line: #d9e2ea;
+      --panel: #ffffff;
+      --soft: #f4f8fb;
+      --blue: #1f6fa3;
+      --blue-dark: #15577e;
+      --green: #36aa78;
+      --mint: #dff5ea;
+      --amber: #f59e0b;
+      --red: #dc2626;
+      --shadow: 0 10px 30px rgba(15, 23, 42, .08);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--ink);
+      background: #f2f6fa;
+      min-height: 100vh;
+    }
+
+    button, input, select, textarea {
+      font: inherit;
+    }
+
+    .app {
+      display: grid;
+      grid-template-columns: 250px minmax(0, 1fr);
+      min-height: 100vh;
+    }
+
+    aside {
+      background: #fff;
+      border-right: 1px solid var(--line);
+      padding: 20px 14px;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow: auto;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 0 0 26px 4px;
+    }
+
+    .mark {
+      width: 36px;
+      height: 42px;
+      position: relative;
+      flex: 0 0 auto;
+    }
+
+    .mark:before,
+    .mark:after {
+      content: "";
+      position: absolute;
+      border-radius: 22px 22px 4px 22px;
+      transform: skewY(-20deg);
+    }
+
+    .mark:before {
+      width: 14px;
+      height: 38px;
+      left: 3px;
+      top: 3px;
+      background: linear-gradient(160deg, #1f6fa3, #2d9cc5);
+    }
+
+    .mark:after {
+      width: 27px;
+      height: 13px;
+      left: 10px;
+      top: 2px;
+      background: linear-gradient(100deg, #46b36f, #77c865);
+    }
+
+    .brand strong {
+      display: block;
+      letter-spacing: .02em;
+      font-size: 21px;
+      line-height: 1;
+    }
+
+    .brand span {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .04em;
+      margin-top: 3px;
+    }
+
+    .nav {
+      display: grid;
+      gap: 5px;
+    }
+
+    .nav button {
+      width: 100%;
+      border: 0;
+      background: transparent;
+      color: #0f172a;
+      display: grid;
+      grid-template-columns: 28px 1fr 16px;
+      align-items: center;
+      gap: 8px;
+      padding: 11px 10px;
+      border-radius: 8px;
+      text-align: left;
+      cursor: pointer;
+      font-weight: 650;
+    }
+
+    .nav button svg {
+      width: 21px;
+      height: 21px;
+      stroke-width: 1.9;
+      color: #4b5563;
+    }
+
+    .nav button.active {
+      background: #dcecf8;
+      color: #185d8b;
+    }
+
+    .nav button.active svg {
+      color: #1f6fa3;
+      fill: rgba(31, 111, 163, .12);
+    }
+
+    .chev {
+      color: #475569;
+      font-size: 17px;
+    }
+
+    main {
+      min-width: 0;
+      display: grid;
+      grid-template-rows: 72px 1fr;
+    }
+
+    header {
+      background: linear-gradient(100deg, #1c6d9f, #0f5d91);
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      padding: 0 24px;
+      color: #fff;
+      position: sticky;
+      top: 0;
+      z-index: 3;
+    }
+
+    .menu-toggle {
+      display: none;
+      width: 42px;
+      height: 42px;
+      border: 1px solid rgba(255,255,255,.35);
+      border-radius: 8px;
+      background: rgba(255,255,255,.08);
+      color: #fff;
+      place-items: center;
+      cursor: pointer;
+    }
+
+    .search {
+      width: min(460px, 52vw);
+      position: relative;
+    }
+
+    .search input {
+      width: 100%;
+      border: 0;
+      border-radius: 8px;
+      background: rgba(255,255,255,.86);
+      padding: 14px 15px 14px 45px;
+      color: #0f172a;
+      outline: none;
+      box-shadow: inset 0 0 0 1px rgba(15, 23, 42, .16);
+    }
+
+    .search svg {
+      position: absolute;
+      left: 15px;
+      top: 13px;
+      width: 20px;
+      height: 20px;
+      color: #475569;
+    }
+
+    .header-actions {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .icon-btn {
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      border: 0;
+      background: transparent;
+      color: inherit;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .icon-btn svg { width: 21px; height: 21px; }
+    .dot {
+      position: absolute;
+      right: 8px;
+      top: 8px;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: #ef6b53;
+      border: 2px solid #1c6d9f;
+    }
+
+    .avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: #e2e8f0;
+      display: grid;
+      place-items: center;
+      color: #64748b;
+    }
+
+    .content {
+      padding: 22px 24px 36px;
+      overflow: hidden;
+    }
+
+    .topline {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(26px, 3vw, 34px);
+      letter-spacing: 0;
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .btn, .select {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 10px 13px;
+      min-height: 42px;
+      box-shadow: 0 3px 9px rgba(15,23,42,.04);
+      cursor: pointer;
+      color: #0f172a;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+
+    .btn.primary {
+      background: var(--blue);
+      color: #fff;
+      border-color: var(--blue);
+    }
+
+    .btn.green {
+      background: var(--green);
+      color: #fff;
+      border-color: var(--green);
+    }
+
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 16px;
+    }
+
+    .metric,
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      box-shadow: 0 4px 18px rgba(15, 23, 42, .05);
+      overflow: hidden;
+    }
+
+    .metric {
+      min-height: 94px;
+      padding: 17px 16px;
+      display: grid;
+      grid-template-columns: 1fr 40px;
+      gap: 8px;
+      align-items: start;
+    }
+
+    .metric p {
+      margin: 0 0 2px;
+      font-size: 15px;
+    }
+
+    .metric strong {
+      display: block;
+      font-size: clamp(24px, 2.6vw, 31px);
+      line-height: 1.05;
+    }
+
+    .trend {
+      color: #238b5b;
+      font-size: 13px;
+      margin-top: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      justify-self: end;
+    }
+
+    .metric .mini {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+    }
+
+    .mini.blue { background: #dbeefa; color: #1f6fa3; }
+    .mini.green { background: #daf6e8; color: #249161; }
+
+    .panel-title {
+      padding: 15px 16px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      font-weight: 750;
+      font-size: 18px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .panel-body { padding: 16px; }
+
+    .span-2 { grid-column: span 2; }
+    .span-full { grid-column: 1 / -1; }
+
+    .chart-wrap {
+      min-height: 194px;
+    }
+
+    .bars {
+      height: 182px;
+      display: grid;
+      grid-template-columns: 46px repeat(6, 1fr);
+      align-items: end;
+      gap: 12px;
+      border-bottom: 1px solid var(--line);
+      position: relative;
+      padding-top: 8px;
+    }
+
+    .bars:before,
+    .bars:after {
+      content: "";
+      position: absolute;
+      left: 46px;
+      right: 0;
+      height: 1px;
+      background: #e5edf3;
+    }
+
+    .bars:before { top: 45px; }
+    .bars:after { top: 96px; }
+
+    .axis {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      color: #0f172a;
+      font-size: 13px;
+      padding-bottom: 6px;
+    }
+
+    .bar-group {
+      height: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      align-items: end;
+      position: relative;
+      z-index: 1;
+    }
+
+    .bar {
+      border-radius: 4px 4px 0 0;
+      background: linear-gradient(#2678aa, #185d8b);
+      min-height: 22px;
+    }
+
+    .bar.purchase {
+      background: linear-gradient(#51bf86, #2f9a69);
+    }
+
+    .months {
+      display: grid;
+      grid-template-columns: 46px repeat(6, 1fr);
+      gap: 12px;
+      margin-top: 8px;
+      font-size: 13px;
+      text-align: center;
+    }
+
+    .donut-area {
+      display: grid;
+      grid-template-columns: minmax(150px, 190px) 1fr;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .donut {
+      width: min(168px, 100%);
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: conic-gradient(#1f6fa3 0 17%, #358bc5 17% 29%, #77cfe3 29% 40%, #75c793 40% 53%, #35aa76 53% 74%, #ff8f25 74% 100%);
+      margin: auto;
+      position: relative;
+    }
+
+    .donut:after {
+      content: "";
+      position: absolute;
+      inset: 41px;
+      border-radius: 50%;
+      background: #fff;
+    }
+
+    .legend {
+      display: grid;
+      gap: 10px;
+      font-size: 14px;
+    }
+
+    .legend span {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .swatch {
+      width: 12px;
+      height: 12px;
+      border-radius: 3px;
+      display: inline-block;
+      margin-right: 8px;
+      vertical-align: -1px;
+    }
+
+    .gst-grid {
+      display: grid;
+      gap: 12px;
+      font-size: 15px;
+    }
+
+    .gst-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 14px;
+      border-bottom: 1px solid #e5edf3;
+      padding-bottom: 11px;
+    }
+
+    .gst-row:last-child {
+      border-bottom: 0;
+      padding-bottom: 0;
+      font-weight: 800;
+    }
+
+    .gst-summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+
+    .gst-summary div + div {
+      border-left: 1px solid var(--line);
+      padding-left: 16px;
+    }
+
+    .gst-summary p {
+      margin: 0 0 5px;
+      color: #111827;
+      font-size: 15px;
+    }
+
+    .gst-summary strong {
+      font-size: 24px;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 15px;
+    }
+
+    th, td {
+      padding: 12px 15px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: middle;
+    }
+
+    th {
+      background: #f3f7fa;
+      font-size: 14px;
+    }
+
+    tr:last-child td { border-bottom: 0; }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 58px;
+      padding: 5px 9px;
+      border-radius: 7px;
+      font-size: 13px;
+      line-height: 1;
+      white-space: nowrap;
+    }
+
+    .paid { background: #c8f0d8; color: #12623b; }
+    .pending { background: #ffe8a9; color: #714400; }
+    .low { background: #ffd8bd; color: #7c2d12; }
+    .alert {
+      background: #ffefef;
+      color: #a12424;
+      border: 1px solid #ffd0d0;
+      border-radius: 8px;
+      padding: 7px 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 13px;
+      align-items: end;
+    }
+
+    label {
+      display: grid;
+      gap: 6px;
+      color: #334155;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    input, select, textarea {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 11px 12px;
+      background: #fff;
+      color: #0f172a;
+      min-width: 0;
+      outline-color: #7dc0e3;
+    }
+
+    textarea {
+      min-height: 82px;
+      resize: vertical;
+    }
+
+    .invoice-layout {
+      display: grid;
+      grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+      gap: 16px;
+    }
+
+    .line-items {
+      display: grid;
+      gap: 10px;
+    }
+
+    .line {
+      display: grid;
+      grid-template-columns: 1.5fr .6fr .8fr .7fr 42px;
+      gap: 8px;
+      align-items: end;
+    }
+
+    .line button {
+      height: 42px;
+      width: 42px;
+      border: 1px solid #ffd0d0;
+      border-radius: 8px;
+      background: #fff5f5;
+      color: #b91c1c;
+      cursor: pointer;
+    }
+
+    .invoice-paper {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      padding: 24px;
+      min-height: 560px;
+    }
+
+    .paper-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      border-bottom: 2px solid #0f5d91;
+      padding-bottom: 16px;
+      margin-bottom: 18px;
+    }
+
+    .paper-head h2 {
+      margin: 0 0 5px;
+      font-size: 27px;
+    }
+
+    .paper-head p, .bill-to p {
+      margin: 3px 0;
+      color: #475569;
+      font-size: 14px;
+    }
+
+    .bill-to {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 18px;
+    }
+
+    .totals {
+      margin-left: auto;
+      width: min(340px, 100%);
+      display: grid;
+      gap: 8px;
+      font-size: 15px;
+    }
+
+    .totals div {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .totals .grand {
+      border-top: 1px solid var(--line);
+      padding-top: 10px;
+      font-weight: 850;
+      font-size: 20px;
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+      gap: 16px;
+    }
+
+    .inventory-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .stock-tile {
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: #fff;
+      display: grid;
+      gap: 8px;
+    }
+
+    .stock-tile strong { font-size: 20px; }
+    .stock-tile p { margin: 0; color: var(--muted); }
+
+    .footer-note {
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 14px;
+    }
+
+    @media print {
+      body { background: #fff; }
+      aside, header, .no-print, .topline, .invoice-layout > .panel { display: none !important; }
+      .app, main { display: block; min-height: auto; }
+      .content { padding: 0; }
+      .screen { display: none !important; }
+      #sales { display: block !important; }
+      .invoice-layout { display: block; }
+      .invoice-paper { border: 0; border-radius: 0; padding: 0; }
+    }
+
+    @media (max-width: 1180px) {
+      .dashboard { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .span-2 { grid-column: span 2; }
+      .donut-area { grid-template-columns: 1fr; }
+      .inventory-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 880px) {
+      .app { grid-template-columns: 1fr; }
+      aside {
+        position: fixed;
+        z-index: 5;
+        transform: translateX(-105%);
+        transition: transform .2s ease;
+        width: 250px;
+        box-shadow: var(--shadow);
+      }
+      body.nav-open aside { transform: translateX(0); }
+      main { grid-template-rows: auto 1fr; }
+      header { padding: 12px 14px; }
+      .menu-toggle { display: grid; }
+      .search { width: 100%; }
+      .header-actions { display: none; }
+      .content { padding: 18px 14px 30px; }
+      .topline { align-items: flex-start; flex-direction: column; }
+      .actions { justify-content: flex-start; }
+      .form-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .invoice-layout, .split { grid-template-columns: 1fr; }
+      .line { grid-template-columns: 1fr 1fr; }
+      .line button { width: 100%; }
+    }
+
+    @media (max-width: 620px) {
+      .dashboard, .inventory-grid { grid-template-columns: 1fr; }
+      .span-2, .span-full { grid-column: auto; }
+      .gst-summary { grid-template-columns: 1fr; }
+      .gst-summary div + div { border-left: 0; padding-left: 0; border-top: 1px solid var(--line); padding-top: 10px; }
+      .bars { grid-template-columns: 34px repeat(6, 1fr); gap: 7px; }
+      .months { grid-template-columns: 34px repeat(6, 1fr); gap: 7px; font-size: 12px; }
+      .axis { font-size: 11px; }
+      .bar-group { gap: 4px; }
+      th, td { padding: 10px 8px; font-size: 13px; }
+      .form-grid, .bill-to { grid-template-columns: 1fr; }
+      .invoice-paper { padding: 16px; }
+      .paper-head { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <aside>
+      <div class="brand">
+        <div class="mark" aria-hidden="true"></div>
+        <div>
+          <strong>THOOVAM</strong>
+          <span>BILLING & ACCOUNTS</span>
+        </div>
+      </div>
+
+      <nav class="nav" aria-label="Main menu">
+        <button data-screen="dashboard" class="active"><span data-icon="home"></span><span>Home</span><span></span></button>
+        <button data-screen="dashboard"><span data-icon="grid"></span><span>Dashboard</span><span></span></button>
+        <button data-screen="sales"><span data-icon="invoice"></span><span>Sales & Invoicing</span><span class="chev">⌄</span></button>
+        <button data-screen="purchases"><span data-icon="cart"></span><span>Purchases & Bills</span><span class="chev">⌄</span></button>
+        <button data-screen="inventory"><span data-icon="box"></span><span>Inventory (Stock)</span><span class="chev">⌄</span></button>
+        <button data-screen="expenses"><span data-icon="receipt"></span><span>Expenses</span><span></span></button>
+        <button data-screen="customers"><span data-icon="users"></span><span>Customer Management</span><span></span></button>
+        <button data-screen="vendors"><span data-icon="users"></span><span>Vendor Management</span><span></span></button>
+        <button data-screen="gst"><span data-icon="file"></span><span>GST Reports</span><span></span></button>
+        <button data-screen="reports"><span data-icon="chart"></span><span>Business Reports</span><span></span></button>
+        <button data-screen="settings"><span data-icon="settings"></span><span>Settings</span><span></span></button>
+      </nav>
+    </aside>
+
+    <main>
+      <header>
+        <button class="menu-toggle" id="menuToggle" aria-label="Open menu"><span data-icon="menu"></span></button>
+        <div class="search">
+          <span data-icon="search"></span>
+          <input id="globalSearch" type="search" placeholder="Search invoices, bills, customers...">
+        </div>
+        <div class="header-actions">
+          <button class="icon-btn" aria-label="Help"><span data-icon="help"></span></button>
+          <button class="icon-btn" aria-label="Notifications"><span data-icon="bell"></span><span class="dot"></span></button>
+          <div class="avatar"><span data-icon="user"></span></div>
+          <span>⌄</span>
+        </div>
+      </header>
+
+      <section class="content">
+        <div class="screen active" id="dashboard">
+          <div class="topline">
+            <h1>Dashboard</h1>
+            <div class="actions">
+              <button class="btn primary" data-screen-jump="sales"><span data-icon="plus"></span>New Invoice</button>
+              <select class="select" aria-label="Period"><option>All amounts</option><option>This month</option><option>Last quarter</option></select>
+            </div>
+          </div>
+
+          <div class="dashboard">
+            <article class="metric">
+              <div><p>Total Sales</p><strong id="salesMetric">₹1,45,000</strong></div>
+              <span class="mini blue" data-icon="trend"></span>
+              <span class="trend">↗ 1.37%</span>
+            </article>
+            <article class="metric">
+              <div><p>Total Purchases</p><strong>₹82,500</strong></div>
+              <span class="mini blue" data-icon="cart"></span>
+              <span class="trend">↗ 1.82%</span>
+            </article>
+            <article class="metric">
+              <div><p>Net Profit</p><strong>₹62,500</strong></div>
+              <span class="mini green" data-icon="trend"></span>
+              <span class="trend">↗ 1.09%</span>
+            </article>
+            <article class="metric">
+              <div><p>Current Stock Value</p><strong>₹2,30,000</strong></div>
+              <span class="mini green" data-icon="box"></span>
+              <span class="trend">↗ 30%</span>
+            </article>
+
+            <article class="panel span-2">
+              <div class="panel-title">
+                <span>Monthly Sales vs Purchases</span>
+                <select class="select" aria-label="Sales period"><option>Last 6 Months</option><option>This Year</option></select>
+              </div>
+              <div class="panel-body chart-wrap">
+                <div class="bars" aria-label="Bar chart">
+                  <div class="axis"><span>₹4,000</span><span>₹3,000</span><span>₹2,000</span><span>₹1,000</span><span>0</span></div>
+                  <div class="bar-group"><div class="bar" style="height:67%"></div><div class="bar purchase" style="height:39%"></div></div>
+                  <div class="bar-group"><div class="bar" style="height:78%"></div><div class="bar purchase" style="height:50%"></div></div>
+                  <div class="bar-group"><div class="bar" style="height:60%"></div><div class="bar purchase" style="height:39%"></div></div>
+                  <div class="bar-group"><div class="bar" style="height:80%"></div><div class="bar purchase" style="height:68%"></div></div>
+                  <div class="bar-group"><div class="bar" style="height:76%"></div><div class="bar purchase" style="height:60%"></div></div>
+                  <div class="bar-group"><div class="bar" style="height:88%"></div><div class="bar purchase" style="height:70%"></div></div>
+                </div>
+                <div class="months"><span></span><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span></div>
+              </div>
+            </article>
+
+            <article class="panel">
+              <div class="panel-title">Expense Categories</div>
+              <div class="panel-body donut-area">
+                <div class="donut" aria-label="Expense category donut chart"></div>
+                <div class="legend">
+                  <span><b><i class="swatch" style="background:#1f6fa3"></i>Rent</b><strong>17%</strong></span>
+                  <span><b><i class="swatch" style="background:#358bc5"></i>Utilities</b><strong>12%</strong></span>
+                  <span><b><i class="swatch" style="background:#77cfe3"></i>Supplies</b><strong>11%</strong></span>
+                  <span><b><i class="swatch" style="background:#35aa76"></i>Others</b><strong>21%</strong></span>
+                  <span><b><i class="swatch" style="background:#ff8f25"></i>Reent</b><strong>26%</strong></span>
+                </div>
+              </div>
+            </article>
+
+            <article class="panel">
+              <div class="panel-title">GST Snapshot</div>
+              <div class="panel-body gst-grid">
+                <div>Current month calculated</div>
+                <div class="gst-row"><span>Total GST Output</span><strong>₹26,100</strong></div>
+                <div class="gst-row"><span>Total GST Input (ITC)</span><strong>₹14,850</strong></div>
+                <div class="gst-row"><span>Net GST Payable</span><strong>₹11,250</strong></div>
+                <a href="#gst" data-screen-jump="gst" style="color:#15577e;text-decoration:none;">GST Return Filing Overview →</a>
+              </div>
+            </article>
+
+            <article class="panel span-2">
+              <div class="panel-title"><span>Inventory Status</span><span class="alert">⚠ Low Stock Alert</span></div>
+              <div style="overflow:auto">
+                <table>
+                  <thead><tr><th>Key Product</th><th>Current Quantity</th><th>Reorder Level</th></tr></thead>
+                  <tbody id="inventoryTable"></tbody>
+                </table>
+              </div>
+            </article>
+
+            <article class="panel span-2">
+              <div class="panel-title"><span>GST Snapshot</span><span style="font-weight:500;color:#475569">Current Month →</span></div>
+              <div class="panel-body gst-summary">
+                <div><p>Total GST Output</p><strong>₹26,100</strong></div>
+                <div><p>Total GST Input (ITC)</p><strong>₹14,850</strong></div>
+                <div><p>Net GST Payable</p><strong>₹11,250</strong></div>
+              </div>
+            </article>
+
+            <article class="panel span-2">
+              <div class="panel-title">Recent Transactions</div>
+              <div style="overflow:auto">
+                <table>
+                  <thead><tr><th>Date</th><th>Party</th><th>Amount</th><th>Status</th></tr></thead>
+                  <tbody id="transactionsTable"></tbody>
+                </table>
+              </div>
+            </article>
+          </div>
+        </div>
+
+        <div class="screen" id="sales">
+          <div class="topline">
+            <h1>Sales & Invoicing</h1>
+            <div class="actions no-print">
+              <button class="btn green" id="addLine"><span data-icon="plus"></span>Add Item</button>
+              <button class="btn primary" id="saveInvoice"><span data-icon="save"></span>Save Invoice</button>
+              <button class="btn" id="printInvoice"><span data-icon="print"></span>Print</button>
+            </div>
+          </div>
+          <div class="invoice-layout">
+            <article class="panel no-print">
+              <div class="panel-title">Create Invoice</div>
+              <div class="panel-body">
+                <div class="form-grid" style="grid-template-columns:1fr 1fr">
+                  <label>Invoice No.<input id="invoiceNo" value="THV-INV-1001"></label>
+                  <label>Date<input id="invoiceDate" type="date"></label>
+                  <label>Customer<input id="customerName" value="Ananya Traders"></label>
+                  <label>GSTIN<input id="customerGst" value="32ABCDE1234F1Z5"></label>
+                  <label style="grid-column:1/-1">Billing Address<textarea id="customerAddress">Kochi, Kerala</textarea></label>
+                </div>
+                <h3 style="margin:18px 0 10px">Items</h3>
+                <div class="line-items" id="lineItems"></div>
+              </div>
+            </article>
+            <article class="invoice-paper" id="invoicePreview">
+              <div class="paper-head">
+                <div>
+                  <div class="brand" style="margin:0 0 8px">
+                    <div class="mark"></div><div><strong>THOOVAM</strong><span>BILLING & ACCOUNTS</span></div>
+                  </div>
+                  <p>GSTIN: 32THOOVAM2026Z5</p>
+                  <p>Kerala, India</p>
+                </div>
+                <div style="text-align:right">
+                  <h2>TAX INVOICE</h2>
+                  <p id="pvInvoiceNo">THV-INV-1001</p>
+                  <p id="pvInvoiceDate"></p>
+                </div>
+              </div>
+              <div class="bill-to">
+                <div>
+                  <strong>Bill To</strong>
+                  <p id="pvCustomer">Ananya Traders</p>
+                  <p id="pvGst">GSTIN: 32ABCDE1234F1Z5</p>
+                  <p id="pvAddress">Kochi, Kerala</p>
+                </div>
+                <div>
+                  <strong>Payment</strong>
+                  <p>Due on receipt</p>
+                  <p>Bank: THOOVAM Current Account</p>
+                </div>
+              </div>
+              <table>
+                <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>GST</th><th>Total</th></tr></thead>
+                <tbody id="previewItems"></tbody>
+              </table>
+              <div class="totals">
+                <div><span>Sub Total</span><strong id="subTotal">₹0</strong></div>
+                <div><span>GST</span><strong id="gstTotal">₹0</strong></div>
+                <div class="grand"><span>Grand Total</span><strong id="grandTotal">₹0</strong></div>
+              </div>
+              <p class="footer-note">Thank you for your business. This invoice was generated from THOOVAM Billing & Accounts.</p>
+            </article>
+          </div>
+        </div>
+
+        <div class="screen" id="purchases">
+          <div class="topline"><h1>Purchases & Bills</h1><button class="btn primary"><span data-icon="plus"></span>Record Bill</button></div>
+          <article class="panel">
+            <div class="panel-title">Supplier Bills</div>
+            <div style="overflow:auto"><table><thead><tr><th>Bill No.</th><th>Vendor</th><th>Date</th><th>Taxable</th><th>GST Input</th><th>Status</th></tr></thead><tbody id="purchaseRows"></tbody></table></div>
+          </article>
+        </div>
+
+        <div class="screen" id="inventory">
+          <div class="topline"><h1>Inventory (Stock)</h1><button class="btn primary"><span data-icon="plus"></span>Add Product</button></div>
+          <div class="inventory-grid" id="stockTiles"></div>
+          <article class="panel" style="margin-top:16px">
+            <div class="panel-title">Stock Register</div>
+            <div style="overflow:auto"><table><thead><tr><th>Product</th><th>SKU</th><th>Qty</th><th>Reorder</th><th>Stock Value</th><th>Status</th></tr></thead><tbody id="stockRows"></tbody></table></div>
+          </article>
+        </div>
+
+        <div class="screen" id="expenses">
+          <div class="topline"><h1>Expenses</h1><button class="btn primary"><span data-icon="plus"></span>Add Expense</button></div>
+          <div class="split">
+            <article class="panel"><div class="panel-title">Expense Entry</div><div class="panel-body form-grid" style="grid-template-columns:1fr 1fr"><label>Category<select><option>Rent</option><option>Utilities</option><option>Supplies</option></select></label><label>Amount<input value="12500"></label><label>Date<input type="date"></label><label>GST<input value="18"></label></div></article>
+            <article class="panel"><div class="panel-title">Monthly Expense Summary</div><div class="panel-body donut-area"><div class="donut"></div><div class="legend"><span><b>Rent</b><strong>₹18,500</strong></span><span><b>Utilities</b><strong>₹8,400</strong></span><span><b>Supplies</b><strong>₹12,700</strong></span><span><b>Others</b><strong>₹9,900</strong></span></div></div></article>
+          </div>
+        </div>
+
+        <div class="screen" id="customers">
+          <div class="topline"><h1>Customer Management</h1><button class="btn primary"><span data-icon="plus"></span>Add Customer</button></div>
+          <article class="panel"><div class="panel-title">Customers</div><div style="overflow:auto"><table><thead><tr><th>Name</th><th>GSTIN</th><th>Phone</th><th>Outstanding</th><th>Status</th></tr></thead><tbody id="customerRows"></tbody></table></div></article>
+        </div>
+
+        <div class="screen" id="vendors">
+          <div class="topline"><h1>Vendor Management</h1><button class="btn primary"><span data-icon="plus"></span>Add Vendor</button></div>
+          <article class="panel"><div class="panel-title">Vendors</div><div style="overflow:auto"><table><thead><tr><th>Name</th><th>GSTIN</th><th>Phone</th><th>Payable</th><th>Status</th></tr></thead><tbody id="vendorRows"></tbody></table></div></article>
+        </div>
+
+        <div class="screen" id="gst">
+          <div class="topline"><h1>GST Reports</h1><button class="btn primary"><span data-icon="download"></span>Export Report</button></div>
+          <div class="dashboard">
+            <article class="metric"><div><p>Output Tax</p><strong>₹26,100</strong></div><span class="mini blue" data-icon="file"></span></article>
+            <article class="metric"><div><p>Input Credit</p><strong>₹14,850</strong></div><span class="mini green" data-icon="file"></span></article>
+            <article class="metric"><div><p>Payable</p><strong>₹11,250</strong></div><span class="mini blue" data-icon="receipt"></span></article>
+            <article class="metric"><div><p>Return Status</p><strong style="font-size:24px">Ready</strong></div><span class="mini green" data-icon="trend"></span></article>
+            <article class="panel span-full"><div class="panel-title">GST Filing Overview</div><div style="overflow:auto"><table><thead><tr><th>Return</th><th>Period</th><th>Sales Tax</th><th>ITC</th><th>Payable</th><th>Status</th></tr></thead><tbody><tr><td>GSTR-1</td><td>June 2026</td><td>₹26,100</td><td>-</td><td>-</td><td><span class="badge paid">Ready</span></td></tr><tr><td>GSTR-3B</td><td>June 2026</td><td>₹26,100</td><td>₹14,850</td><td>₹11,250</td><td><span class="badge pending">Review</span></td></tr></tbody></table></div></article>
+          </div>
+        </div>
+
+        <div class="screen" id="reports">
+          <div class="topline"><h1>Business Reports</h1><button class="btn primary"><span data-icon="download"></span>Download</button></div>
+          <div class="split">
+            <article class="panel"><div class="panel-title">Profit & Loss</div><div class="panel-body gst-grid"><div class="gst-row"><span>Sales</span><strong>₹1,45,000</strong></div><div class="gst-row"><span>Purchases</span><strong>₹82,500</strong></div><div class="gst-row"><span>Expenses</span><strong>₹18,000</strong></div><div class="gst-row"><span>Net Profit</span><strong>₹44,500</strong></div></div></article>
+            <article class="panel"><div class="panel-title">Receivables & Payables</div><div class="panel-body gst-grid"><div class="gst-row"><span>Receivables</span><strong>₹38,200</strong></div><div class="gst-row"><span>Payables</span><strong>₹24,750</strong></div><div class="gst-row"><span>Cash Position</span><strong>₹13,450</strong></div></div></article>
+          </div>
+        </div>
+
+        <div class="screen" id="settings">
+          <div class="topline"><h1>Settings</h1><button class="btn primary"><span data-icon="save"></span>Save Settings</button></div>
+          <article class="panel"><div class="panel-title">Business Profile</div><div class="panel-body form-grid"><label>Business Name<input value="THOOVAM"></label><label>GSTIN<input value="32THOOVAM2026Z5"></label><label>State<select><option>Kerala</option><option>Tamil Nadu</option><option>Karnataka</option></select></label><label>Currency<input value="INR - ₹"></label><label style="grid-column:1/-1">Invoice Footer<textarea>Thank you for your business.</textarea></label></div></article>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const icons = {
+      home: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m3 11 9-8 9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg>',
+      grid: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>',
+      invoice: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M7 3h8l4 4v14H7z"/><path d="M15 3v5h4"/><path d="M9 13h6M9 17h6M9 9h3"/></svg>',
+      cart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 4h2l2.2 11h10.6L20 8H6"/><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/></svg>',
+      box: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m3 7 9-4 9 4-9 4z"/><path d="M3 7v10l9 4 9-4V7"/><path d="M12 11v10"/></svg>',
+      receipt: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M6 3h12v18l-2-1.3-2 1.3-2-1.3-2 1.3-2-1.3L6 21z"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>',
+      users: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="9" cy="8" r="3"/><path d="M3 21a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M15 15a5 5 0 0 1 6 5"/></svg>',
+      file: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M7 3h7l4 4v14H7z"/><path d="M14 3v5h4"/><path d="M9 13h6M9 17h4"/></svg>',
+      chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 19V5"/><path d="M4 19h17"/><rect x="7" y="11" width="3" height="5"/><rect x="12" y="7" width="3" height="9"/><rect x="17" y="9" width="3" height="7"/></svg>',
+      settings: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.8 1.8 0 0 0 .4 2l.1.1-2.1 2.1-.1-.1a1.8 1.8 0 0 0-2-.4 1.8 1.8 0 0 0-1.1 1.7v.2h-3v-.2a1.8 1.8 0 0 0-1.1-1.7 1.8 1.8 0 0 0-2 .4l-.1.1-2.1-2.1.1-.1a1.8 1.8 0 0 0 .4-2 1.8 1.8 0 0 0-1.7-1.1H5v-3h.2a1.8 1.8 0 0 0 1.7-1.1 1.8 1.8 0 0 0-.4-2l-.1-.1 2.1-2.1.1.1a1.8 1.8 0 0 0 2 .4A1.8 1.8 0 0 0 11.6 5v-.2h3V5a1.8 1.8 0 0 0 1.1 1.7 1.8 1.8 0 0 0 2-.4l.1-.1 2.1 2.1-.1.1a1.8 1.8 0 0 0-.4 2 1.8 1.8 0 0 0 1.7 1.1h.2v3h-.2a1.8 1.8 0 0 0-1.7 1.1z"/></svg>',
+      search: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="7"/><path d="m16.5 16.5 4 4"/></svg>',
+      help: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.7 2.7 0 0 1 5.1 1.3c0 2-2.6 2.2-2.6 4"/><path d="M12 18h.01"/></svg>',
+      bell: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 6-3 8h18c0-2-3-1-3-8"/><path d="M10 20a2 2 0 0 0 4 0"/></svg>',
+      user: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>',
+      trend: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="m4 16 5-5 4 4 7-8"/><path d="M14 7h6v6"/></svg>',
+      plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg>',
+      save: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M5 3h12l2 2v16H5z"/><path d="M8 3v6h8V3"/><path d="M8 21v-7h8v7"/></svg>',
+      print: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M7 8V3h10v5"/><path d="M7 17H5a2 2 0 0 1-2-2v-4a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v4a2 2 0 0 1-2 2h-2"/><path d="M7 14h10v7H7z"/></svg>',
+      download: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M5 21h14"/></svg>',
+      menu: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 7h16M4 12h16M4 17h16"/></svg>'
+    };
+
+    document.querySelectorAll("[data-icon]").forEach(el => el.innerHTML = icons[el.dataset.icon] || "");
+
+    const rupee = value => "₹" + Math.round(value).toLocaleString("en-IN");
+    const today = new Date().toISOString().slice(0, 10);
+
+    const inventory = [
+      ["Product Box 1", "THV-PB1", 40, 50, 42000],
+      ["Key Product 2", "THV-KP2", 30, 40, 31000],
+      ["Product Comer-fon", "THV-PCF", 10, 20, 27000],
+      ["Product Groedr Supply", "THV-PGS", 20, 20, 54000],
+      ["Product Sals", "THV-PSL", 30, 10, 76000]
+    ];
+    const transactions = [
+      ["08/12/2023", "Sales Invoice", 145000, "Paid"],
+      ["08/12/2023", "Purchase Bill", 82500, "Pending"],
+      ["07/12/2023", "GST Payment", 11250, "Paid"],
+      ["06/12/2023", "Office Expense", 12500, "Paid"]
+    ];
+    const customers = [
+      ["Ananya Traders", "32ABCDE1234F1Z5", "+91 98765 43210", 18500, "Active"],
+      ["Malabar Stores", "32EFGHI1234K1Z2", "+91 98765 11122", 0, "Active"],
+      ["Urban Retail", "29JKLMN1234P1Z8", "+91 98470 33344", 19700, "Due"]
+    ];
+    const vendors = [
+      ["Kairali Supplies", "32SUPPL1234A1Z1", "+91 98950 12000", 82500, "Pending"],
+      ["Coastal Packaging", "32PACK1234B1Z2", "+91 94470 77440", 14200, "Paid"],
+      ["Prime Utilities", "32UTIL1234C1Z3", "+91 98460 55660", 9800, "Pending"]
+    ];
+
+    function fillTables() {
+      document.getElementById("inventoryTable").innerHTML = inventory.map(([name,, qty, reorder]) => `
+        <tr><td>${name}</td><td>${qty}</td><td>${reorder > qty ? '<span class="badge low">Low-stock</span>' : reorder}</td></tr>
+      `).join("");
+      document.getElementById("transactionsTable").innerHTML = transactions.map(([date, party, amount, status]) => `
+        <tr><td>${date}</td><td>${party}</td><td>${rupee(amount)}</td><td><span class="badge ${status === "Paid" ? "paid" : "pending"}">${status}</span></td></tr>
+      `).join("");
+      document.getElementById("stockTiles").innerHTML = inventory.slice(0, 4).map(([name,, qty, reorder, value]) => `
+        <div class="stock-tile"><p>${name}</p><strong>${qty} units</strong><span>${rupee(value)} stock value</span><span class="badge ${qty <= reorder ? "low" : "paid"}">${qty <= reorder ? "Low-stock" : "Healthy"}</span></div>
+      `).join("");
+      document.getElementById("stockRows").innerHTML = inventory.map(([name, sku, qty, reorder, value]) => `
+        <tr><td>${name}</td><td>${sku}</td><td>${qty}</td><td>${reorder}</td><td>${rupee(value)}</td><td><span class="badge ${qty <= reorder ? "low" : "paid"}">${qty <= reorder ? "Low-stock" : "Healthy"}</span></td></tr>
+      `).join("");
+      document.getElementById("purchaseRows").innerHTML = vendors.map(([name, gst,, payable, status], i) => `
+        <tr><td>PB-00${i + 8}</td><td>${name}</td><td>08/12/2023</td><td>${rupee(payable)}</td><td>${rupee(payable * .18)}</td><td><span class="badge ${status === "Paid" ? "paid" : "pending"}">${status}</span></td></tr>
+      `).join("");
+      document.getElementById("customerRows").innerHTML = customers.map(([name, gst, phone, due, status]) => `
+        <tr><td>${name}</td><td>${gst}</td><td>${phone}</td><td>${rupee(due)}</td><td><span class="badge ${due ? "pending" : "paid"}">${status}</span></td></tr>
+      `).join("");
+      document.getElementById("vendorRows").innerHTML = vendors.map(([name, gst, phone, due, status]) => `
+        <tr><td>${name}</td><td>${gst}</td><td>${phone}</td><td>${rupee(due)}</td><td><span class="badge ${status === "Paid" ? "paid" : "pending"}">${status}</span></td></tr>
+      `).join("");
+    }
+
+    function showScreen(id) {
+      document.querySelectorAll(".screen").forEach(el => el.classList.toggle("active", el.id === id));
+      document.querySelectorAll(".nav button").forEach(el => el.classList.toggle("active", el.dataset.screen === id));
+      document.body.classList.remove("nav-open");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    document.querySelectorAll("[data-screen], [data-screen-jump]").forEach(el => {
+      el.addEventListener("click", event => {
+        event.preventDefault();
+        showScreen(el.dataset.screen || el.dataset.screenJump);
+      });
+    });
+    document.getElementById("menuToggle").addEventListener("click", () => document.body.classList.toggle("nav-open"));
+
+    const lineItems = document.getElementById("lineItems");
+    function createLine(item = "Product Box 1", qty = 2, rate = 12500, gst = 18) {
+      const row = document.createElement("div");
+      row.className = "line";
+      row.innerHTML = `
+        <label>Item<input class="li-item" value="${item}"></label>
+        <label>Qty<input class="li-qty" type="number" min="1" value="${qty}"></label>
+        <label>Rate<input class="li-rate" type="number" min="0" value="${rate}"></label>
+        <label>GST %<input class="li-gst" type="number" min="0" value="${gst}"></label>
+        <button type="button" class="remove" aria-label="Remove item">×</button>
+      `;
+      row.querySelectorAll("input").forEach(input => input.addEventListener("input", updateInvoice));
+      row.querySelector(".remove").addEventListener("click", () => {
+        if (lineItems.children.length > 1) row.remove();
+        updateInvoice();
+      });
+      lineItems.appendChild(row);
+      updateInvoice();
+    }
+
+    function updateInvoice() {
+      document.getElementById("pvInvoiceNo").textContent = document.getElementById("invoiceNo").value;
+      document.getElementById("pvInvoiceDate").textContent = document.getElementById("invoiceDate").value;
+      document.getElementById("pvCustomer").textContent = document.getElementById("customerName").value;
+      document.getElementById("pvGst").textContent = "GSTIN: " + document.getElementById("customerGst").value;
+      document.getElementById("pvAddress").textContent = document.getElementById("customerAddress").value;
+
+      let subtotal = 0;
+      let gstTotal = 0;
+      const rows = [...lineItems.children].map(row => {
+        const item = row.querySelector(".li-item").value || "Item";
+        const qty = Number(row.querySelector(".li-qty").value) || 0;
+        const rate = Number(row.querySelector(".li-rate").value) || 0;
+        const gst = Number(row.querySelector(".li-gst").value) || 0;
+        const lineSub = qty * rate;
+        const lineGst = lineSub * gst / 100;
+        subtotal += lineSub;
+        gstTotal += lineGst;
+        return `<tr><td>${item}</td><td>${qty}</td><td>${rupee(rate)}</td><td>${gst}%</td><td>${rupee(lineSub + lineGst)}</td></tr>`;
+      });
+      document.getElementById("previewItems").innerHTML = rows.join("");
+      document.getElementById("subTotal").textContent = rupee(subtotal);
+      document.getElementById("gstTotal").textContent = rupee(gstTotal);
+      document.getElementById("grandTotal").textContent = rupee(subtotal + gstTotal);
+    }
+
+    ["invoiceNo", "invoiceDate", "customerName", "customerGst", "customerAddress"].forEach(id => {
+      document.getElementById(id).addEventListener("input", updateInvoice);
+    });
+    document.getElementById("invoiceDate").value = today;
+    document.getElementById("addLine").addEventListener("click", () => createLine("Key Product 2", 1, 8500, 18));
+    document.getElementById("printInvoice").addEventListener("click", () => window.print());
+    document.getElementById("saveInvoice").addEventListener("click", () => {
+      const amount = document.getElementById("grandTotal").textContent;
+      alert("Invoice saved: " + document.getElementById("invoiceNo").value + " for " + amount);
+    });
+
+    document.getElementById("globalSearch").addEventListener("input", event => {
+      const q = event.target.value.trim().toLowerCase();
+      if (!q) return;
+      if (q.includes("gst")) showScreen("gst");
+      if (q.includes("invoice") || q.includes("sales")) showScreen("sales");
+      if (q.includes("stock") || q.includes("product")) showScreen("inventory");
+      if (q.includes("customer")) showScreen("customers");
+      if (q.includes("vendor")) showScreen("vendors");
+    });
+
+    fillTables();
+    createLine("Product Box 1", 2, 12500, 18);
+    createLine("Product Comer-fon", 1, 18500, 18);
+  </script>
+</body>
+</html>
