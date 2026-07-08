@@ -838,6 +838,7 @@
         <button data-screen="expenses"><span data-icon="receipt"></span><span>Expenses</span><span></span></button>
         <button data-screen="customers"><span data-icon="users"></span><span>Customer Management</span><span></span></button>
         <button data-screen="vendors"><span data-icon="users"></span><span>Vendor Management</span><span></span></button>
+        <button data-screen="payments"><span data-icon="receipt"></span><span>Payment Entry</span><span></span></button>
         <button data-screen="gst"><span data-icon="file"></span><span>GST Reports</span><span></span></button>
         <button data-screen="reports"><span data-icon="chart"></span><span>Business Reports</span><span></span></button>
         <button data-screen="settings"><span data-icon="settings"></span><span>Settings</span><span></span></button>
@@ -1073,6 +1074,25 @@
         <div class="screen" id="vendors">
           <div class="topline"><h1>Vendor Management</h1><div class="actions"><button class="delete-btn" id="deleteAllVendors"><span data-icon="trash"></span>Remove</button><button class="btn primary" id="addVendor"><span data-icon="plus"></span>Add Vendor</button></div></div>
           <article class="panel"><div class="panel-title">Vendors</div><div style="overflow:auto"><table><thead><tr><th>Name</th><th>GSTIN</th><th>Phone</th><th>Payable</th><th>Status</th><th>Action</th></tr></thead><tbody id="vendorRows"></tbody></table></div></article>
+        </div>
+
+        <div class="screen" id="payments">
+          <div class="topline"><h1>Payment Entry</h1><div class="actions"><button class="delete-btn" id="deleteAllPayments"><span data-icon="trash"></span>Remove</button><button class="btn primary" id="savePaymentEntry"><span data-icon="save"></span>Save Payment</button></div></div>
+          <article class="panel">
+            <div class="panel-title">New Payment</div>
+            <div class="panel-body form-grid">
+              <label>Payment For<select id="paymentPartyType"><option>Customer</option><option>Vendor</option></select></label>
+              <label>Customer / Vendor Name<input id="paymentPartyName" list="paymentPartyList" placeholder="Type saved name"></label>
+              <datalist id="paymentPartyList"></datalist>
+              <label>Payment Method<select id="paymentMethod"><option>Cash</option><option>Card</option><option>UPI</option></select></label>
+              <label>Payment Entry<input id="paymentAmount" type="number" min="0" value="0"></label>
+              <label>Date<input id="paymentDate" type="date"></label>
+            </div>
+          </article>
+          <article class="panel" style="margin-top:16px">
+            <div class="panel-title">Payment History</div>
+            <div style="overflow:auto"><table><thead><tr><th>Date</th><th>Type</th><th>Name</th><th>Method</th><th>Amount</th><th>Applied</th><th>Action</th></tr></thead><tbody id="paymentRows"></tbody></table></div>
+          </article>
         </div>
 
         <div class="screen" id="gst">
@@ -1395,6 +1415,7 @@
       const todayText = () => new Date().toISOString().slice(0, 10);
       const defaults = {
         invoices: [],
+        payments: [],
         purchases: [
           ["PB-008", "Kairali Supplies", "08/12/2023", 82500, 14850, "Pending"],
           ["PB-009", "Coastal Packaging", "07/12/2023", 14200, 2556, "Paid"],
@@ -1433,6 +1454,7 @@
 
       const data = {
         invoices: read("thoovamInvoices", defaults.invoices),
+        payments: read("thoovamPayments", defaults.payments),
         purchases: read("thoovamPurchases", defaults.purchases),
         inventory: read("thoovamInventory", defaults.inventory),
         expenses: read("thoovamExpenses", defaults.expenses),
@@ -1469,6 +1491,7 @@
 
       function saveAll() {
         write("thoovamInvoices", data.invoices);
+        write("thoovamPayments", data.payments);
         write("thoovamPurchases", data.purchases);
         write("thoovamInventory", data.inventory);
         write("thoovamExpenses", data.expenses);
@@ -1632,6 +1655,10 @@
         document.getElementById("vendorRows").innerHTML = data.vendors.map(([name, gst, phone, due, status], index) => `
           <tr><td>${name}</td><td>${gst}</td><td>${phone}</td><td>${money(vendorPayableByName[(name || "").trim().toLowerCase()] || due)}</td><td><span class="badge ${(vendorPayableByName[(name || "").trim().toLowerCase()] || 0) ? "pending" : "paid"}">${(vendorPayableByName[(name || "").trim().toLowerCase()] || 0) ? "Pending" : "Clear"}</span></td><td>${actionButtons("vendor", index)}</td></tr>
         `).join("");
+        renderPaymentParties();
+        document.getElementById("paymentRows").innerHTML = data.payments.map((payment, index) => `
+          <tr><td>${payment.date}</td><td>${payment.type}</td><td>${payment.name}</td><td>${payment.method}</td><td>${money(payment.amount)}</td><td>${money(payment.applied || 0)}</td><td><button class="delete-btn" data-delete-payment="${index}">${icons.trash} Delete</button></td></tr>
+        `).join("");
         document.getElementById("transactionsTable").innerHTML = [
           ...data.invoices.map(inv => [inv.date, `Invoice ${inv.no}`, inv.total, (Number(inv.paidAmount) || 0) >= (Number(inv.total) || 0) ? "Paid" : "Pending"]),
           ...data.purchases.map(row => [row[2], `Purchase ${row[0]}`, (Number(row[3]) || 0) + (Number(row[4]) || 0), (Number(row[5]) || 0) >= ((Number(row[3]) || 0) + (Number(row[4]) || 0)) ? "Paid" : "Pending"])
@@ -1699,6 +1726,67 @@
         if (!confirm(`Delete this ${label}?`)) return;
         data[listName].splice(index, 1);
         saveAll(); renderAll();
+      }
+
+      function renderPaymentParties() {
+        const list = document.getElementById("paymentPartyList");
+        if (!list) return;
+        const type = document.getElementById("paymentPartyType")?.value || "Customer";
+        const parties = type === "Customer" ? data.customers : data.vendors;
+        list.innerHTML = parties.map(row => `<option value="${row[0]}"></option>`).join("");
+      }
+
+      function applyPaymentEntry() {
+        const type = document.getElementById("paymentPartyType").value;
+        const name = document.getElementById("paymentPartyName").value.trim();
+        const method = document.getElementById("paymentMethod").value;
+        const date = document.getElementById("paymentDate").value || todayText();
+        let remaining = Number(document.getElementById("paymentAmount").value) || 0;
+        if (!name || remaining <= 0) {
+          alert("Enter customer/vendor name and payment amount.");
+          return;
+        }
+        const originalAmount = remaining;
+        let applied = 0;
+        const key = name.toLowerCase();
+
+        if (type === "Customer") {
+          data.invoices
+            .filter(invoice => (invoice.customer || "").trim().toLowerCase() === key)
+            .forEach(invoice => {
+              if (remaining <= 0) return;
+              const total = Number(invoice.total) || 0;
+              const paid = Number(invoice.paidAmount) || 0;
+              const balance = Math.max(total - paid, 0);
+              const part = Math.min(balance, remaining);
+              invoice.paidAmount = paid + part;
+              invoice.paymentMethod = method;
+              invoice.payment = invoice.paidAmount >= total ? "Paid" : "Pending";
+              remaining -= part;
+              applied += part;
+            });
+        } else {
+          data.purchases
+            .filter(bill => (bill[1] || "").trim().toLowerCase() === key)
+            .forEach(bill => {
+              if (remaining <= 0) return;
+              const total = (Number(bill[3]) || 0) + (Number(bill[4]) || 0);
+              const paid = Number(bill[5]) || 0;
+              const balance = Math.max(total - paid, 0);
+              const part = Math.min(balance, remaining);
+              bill[5] = paid + part;
+              bill[6] = method;
+              bill[7] = bill[5] >= total ? "Paid" : "Pending";
+              remaining -= part;
+              applied += part;
+            });
+        }
+
+        data.payments.push({ type, name, method, amount: originalAmount, applied, date });
+        saveAll();
+        renderAll();
+        document.getElementById("paymentAmount").value = 0;
+        alert(applied > 0 ? `Payment saved. ${money(applied)} applied.` : "Payment saved, but no pending bill matched this name.");
       }
 
       function loadSettings() {
@@ -1772,6 +1860,7 @@
       replaceButton("addExpense", () => editExpense());
       replaceButton("addCustomer", () => editParty("customers"));
       replaceButton("addVendor", () => editParty("vendors"));
+      replaceButton("savePaymentEntry", applyPaymentEntry);
       replaceButton("saveSettings", saveSettings);
       replaceButton("resetSettings", () => {
         if (!confirm("Clear saved settings?")) return;
@@ -1779,8 +1868,11 @@
         saveAll(); loadSettings();
       });
 
+      document.getElementById("paymentPartyType")?.addEventListener("change", renderPaymentParties);
+      if (document.getElementById("paymentDate")) document.getElementById("paymentDate").value = todayText();
+
       document.body.addEventListener("click", event => {
-        const target = event.target.closest("[data-edit-invoice], [data-print-invoice], [data-delete-invoice], [data-edit-purchase], [data-remove-purchase], [data-edit-stock], [data-remove-stock], [data-edit-expense], [data-remove-expense], [data-edit-customer], [data-remove-customer], [data-edit-vendor], [data-remove-vendor]");
+        const target = event.target.closest("[data-edit-invoice], [data-print-invoice], [data-delete-invoice], [data-edit-purchase], [data-remove-purchase], [data-edit-stock], [data-remove-stock], [data-edit-expense], [data-remove-expense], [data-edit-customer], [data-remove-customer], [data-edit-vendor], [data-remove-vendor], [data-delete-payment]");
         if (!target) return;
         if (target.dataset.editInvoice) loadInvoice(data.invoices[Number(target.dataset.editInvoice)]);
         if (target.dataset.printInvoice) { loadInvoice(data.invoices[Number(target.dataset.printInvoice)]); setTimeout(() => window.print(), 100); }
@@ -1795,6 +1887,7 @@
         if (target.dataset.removeCustomer) removeItem("customers", Number(target.dataset.removeCustomer), "customer");
         if (target.dataset.editVendor) editParty("vendors", Number(target.dataset.editVendor));
         if (target.dataset.removeVendor) removeItem("vendors", Number(target.dataset.removeVendor), "vendor");
+        if (target.dataset.deletePayment) removeItem("payments", Number(target.dataset.deletePayment), "payment entry");
       });
 
       replaceButton("deleteAllPurchases", () => { if (confirm("Remove all purchase bills?")) { data.purchases = []; saveAll(); renderAll(); } });
@@ -1802,6 +1895,7 @@
       replaceButton("deleteAllExpenses", () => { if (confirm("Remove all expenses?")) { data.expenses = []; saveAll(); renderAll(); } });
       replaceButton("deleteAllCustomers", () => { if (confirm("Remove all customers?")) { data.customers = []; saveAll(); renderAll(); } });
       replaceButton("deleteAllVendors", () => { if (confirm("Remove all vendors?")) { data.vendors = []; saveAll(); renderAll(); } });
+      replaceButton("deleteAllPayments", () => { if (confirm("Remove all payment entries?")) { data.payments = []; saveAll(); renderAll(); } });
 
       loadSettings();
       updateEnhancedInvoice();
