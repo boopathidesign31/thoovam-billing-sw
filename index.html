@@ -983,6 +983,8 @@
                 <div class="form-grid" style="grid-template-columns:1fr 1fr">
                   <label>Invoice No.<input id="invoiceNo" value="THV-INV-1001"></label>
                   <label>Date<input id="invoiceDate" type="date"></label>
+                  <label>Payment Method<select id="invoicePaymentMethod"><option>Cash</option><option>Card</option><option>UPI</option></select></label>
+                  <label>Payment Entry<input id="invoicePaidAmount" type="number" min="0" value="0"></label>
                   <label>Payment Status<select id="invoicePayment"><option>Pending</option><option>Paid</option></select></label>
                   <label>Customer<input id="customerName" value="Ananya Traders"></label>
                   <label>GSTIN<input id="customerGst" value="32ABCDE1234F1Z5"></label>
@@ -1038,7 +1040,7 @@
           <div class="topline"><h1>Purchases & Bills</h1><div class="actions"><button class="delete-btn" id="deleteAllPurchases"><span data-icon="trash"></span>Remove</button><button class="btn primary" id="addPurchase"><span data-icon="plus"></span>Record Bill</button></div></div>
           <article class="panel">
             <div class="panel-title">Supplier Bills</div>
-            <div style="overflow:auto"><table><thead><tr><th>Bill No.</th><th>Vendor</th><th>Date</th><th>Taxable</th><th>GST Input</th><th>Payment</th><th>Action</th></tr></thead><tbody id="purchaseRows"></tbody></table></div>
+            <div style="overflow:auto"><table><thead><tr><th>Bill No.</th><th>Vendor</th><th>Date</th><th>Bill Value</th><th>Paid</th><th>Balance</th><th>Method</th><th>Status</th><th>Action</th></tr></thead><tbody id="purchaseRows"></tbody></table></div>
           </article>
         </div>
 
@@ -1438,9 +1440,20 @@
         vendors: read("thoovamVendors", defaults.vendors),
         settings: read("thoovamSettings", defaults.settings)
       };
-      data.invoices = data.invoices.map(invoice => ({ payment: "Pending", ...invoice }));
+      data.invoices = data.invoices.map(invoice => ({
+        payment: "Pending",
+        paymentMethod: "Cash",
+        paidAmount: invoice.payment === "Paid" ? Number(invoice.total) || 0 : 0,
+        ...invoice
+      }));
       data.expenses = data.expenses.map(row => row.length === 5 ? [row[0], "", row[1], row[2], row[3], row[4]] : row);
-      data.purchases = data.purchases.map(row => [row[0], row[1], row[2], row[3], row[4], row[5] || "Pending"]);
+      data.purchases = data.purchases.map(row => {
+        if (row.length <= 6) {
+          const total = (Number(row[3]) || 0) + (Number(row[4]) || 0);
+          return [row[0], row[1], row[2], row[3], row[4], row[5] === "Paid" ? total : 0, "Cash", row[5] || "Pending"];
+        }
+        return row;
+      });
 
       function replaceButton(id, handler) {
         const oldButton = document.getElementById(id);
@@ -1471,7 +1484,7 @@
             <div class="panel-title">Saved Invoices</div>
             <div style="overflow:auto">
               <table>
-                <thead><tr><th>Invoice No.</th><th>Date</th><th>Customer</th><th>Amount</th><th>Payment</th><th>Action</th></tr></thead>
+                <thead><tr><th>Invoice No.</th><th>Date</th><th>Customer</th><th>Amount</th><th>Paid</th><th>Balance</th><th>Method</th><th>Status</th><th>Action</th></tr></thead>
                 <tbody id="invoiceHistoryRows"></tbody>
               </table>
             </div>
@@ -1530,6 +1543,11 @@
         document.getElementById("subTotal").textContent = money(subtotal);
         document.getElementById("gstTotal").textContent = money(gstTotal);
         document.getElementById("grandTotal").textContent = money(subtotal + gstTotal);
+        const paidField = document.getElementById("invoicePaidAmount");
+        const statusField = document.getElementById("invoicePayment");
+        if (paidField && statusField) {
+          statusField.value = (Number(paidField.value) || 0) >= (subtotal + gstTotal) && (subtotal + gstTotal) > 0 ? "Paid" : "Pending";
+        }
       }
 
       function invoicePayload() {
@@ -1544,7 +1562,9 @@
         return {
           no: document.getElementById("invoiceNo").value || `THV-INV-${Date.now()}`,
           date: document.getElementById("invoiceDate").value || todayText(),
-          payment: document.getElementById("invoicePayment")?.value || "Pending",
+          paymentMethod: document.getElementById("invoicePaymentMethod")?.value || "Cash",
+          paidAmount: Math.min(Number(document.getElementById("invoicePaidAmount")?.value) || 0, total),
+          payment: (Number(document.getElementById("invoicePaidAmount")?.value) || 0) >= total ? "Paid" : "Pending",
           customer: document.getElementById("customerName").value || "Customer",
           gstin: document.getElementById("customerGst").value || "",
           address: document.getElementById("customerAddress").value || "",
@@ -1556,6 +1576,8 @@
       function loadInvoice(invoice) {
         document.getElementById("invoiceNo").value = invoice.no;
         document.getElementById("invoiceDate").value = invoice.date;
+        if (document.getElementById("invoicePaymentMethod")) document.getElementById("invoicePaymentMethod").value = invoice.paymentMethod || "Cash";
+        if (document.getElementById("invoicePaidAmount")) document.getElementById("invoicePaidAmount").value = Number(invoice.paidAmount) || 0;
         if (document.getElementById("invoicePayment")) document.getElementById("invoicePayment").value = invoice.payment || "Pending";
         document.getElementById("customerName").value = invoice.customer;
         document.getElementById("customerGst").value = invoice.gstin;
@@ -1569,16 +1591,19 @@
 
       function renderAll() {
         const customerDueByName = data.invoices.reduce((totals, invoice) => {
-          if ((invoice.payment || "Pending") !== "Paid") {
+          const balance = Math.max((Number(invoice.total) || 0) - (Number(invoice.paidAmount) || 0), 0);
+          if (balance > 0) {
             const key = (invoice.customer || "").trim().toLowerCase();
-            totals[key] = (totals[key] || 0) + (Number(invoice.total) || 0);
+            totals[key] = (totals[key] || 0) + balance;
           }
           return totals;
         }, {});
         const vendorPayableByName = data.purchases.reduce((totals, bill) => {
-          if ((bill[5] || "Pending") !== "Paid") {
+          const billTotal = (Number(bill[3]) || 0) + (Number(bill[4]) || 0);
+          const balance = Math.max(billTotal - (Number(bill[5]) || 0), 0);
+          if (balance > 0) {
             const key = (bill[1] || "").trim().toLowerCase();
-            totals[key] = (totals[key] || 0) + (Number(bill[3]) || 0) + (Number(bill[4]) || 0);
+            totals[key] = (totals[key] || 0) + balance;
           }
           return totals;
         }, {});
@@ -1591,9 +1616,13 @@
         document.getElementById("stockRows").innerHTML = data.inventory.map(([name, sku, qty, reorder, value], index) => `
           <tr><td>${name}</td><td>${sku}</td><td>${qty}</td><td>${reorder}</td><td>${money(value)}</td><td><span class="badge ${qty <= reorder ? "low" : "paid"}">${qty <= reorder ? "Low-stock" : "Healthy"}</span></td><td>${actionButtons("stock", index)}</td></tr>
         `).join("");
-        document.getElementById("purchaseRows").innerHTML = data.purchases.map(([bill, vendor, date, taxable, gst, status], index) => `
-          <tr><td>${bill}</td><td>${vendor}</td><td>${date}</td><td>${money(taxable)}</td><td>${money(gst)}</td><td><span class="badge ${status === "Paid" ? "paid" : "pending"}">${status}</span></td><td>${actionButtons("purchase", index)}</td></tr>
-        `).join("");
+        document.getElementById("purchaseRows").innerHTML = data.purchases.map(([bill, vendor, date, taxable, gst, paidAmount, method, status], index) => {
+          const total = (Number(taxable) || 0) + (Number(gst) || 0);
+          const paid = Math.min(Number(paidAmount) || 0, total);
+          const balance = Math.max(total - paid, 0);
+          const payStatus = balance <= 0 ? "Paid" : "Pending";
+          return `<tr><td>${bill}</td><td>${vendor}</td><td>${date}</td><td>${money(total)}</td><td>${money(paid)}</td><td>${money(balance)}</td><td>${method || "Cash"}</td><td><span class="badge ${payStatus === "Paid" ? "paid" : "pending"}">${payStatus}</span></td><td>${actionButtons("purchase", index)}</td></tr>`;
+        }).join("");
         document.getElementById("expenseRows").innerHTML = data.expenses.map(([no, vendor, category, date, amount, gst], index) => `
           <tr><td>${no}</td><td>${vendor || "-"}</td><td>${category}</td><td>${date}</td><td>${money(amount)}</td><td>${money(gst)}</td><td>${actionButtons("expense", index)}</td></tr>
         `).join("");
@@ -1604,25 +1633,28 @@
           <tr><td>${name}</td><td>${gst}</td><td>${phone}</td><td>${money(vendorPayableByName[(name || "").trim().toLowerCase()] || due)}</td><td><span class="badge ${(vendorPayableByName[(name || "").trim().toLowerCase()] || 0) ? "pending" : "paid"}">${(vendorPayableByName[(name || "").trim().toLowerCase()] || 0) ? "Pending" : "Clear"}</span></td><td>${actionButtons("vendor", index)}</td></tr>
         `).join("");
         document.getElementById("transactionsTable").innerHTML = [
-          ...data.invoices.map(inv => [inv.date, `Invoice ${inv.no}`, inv.total, inv.payment || "Pending"]),
-          ...data.purchases.map(row => [row[2], `Purchase ${row[0]}`, row[3], row[5]])
+          ...data.invoices.map(inv => [inv.date, `Invoice ${inv.no}`, inv.total, (Number(inv.paidAmount) || 0) >= (Number(inv.total) || 0) ? "Paid" : "Pending"]),
+          ...data.purchases.map(row => [row[2], `Purchase ${row[0]}`, (Number(row[3]) || 0) + (Number(row[4]) || 0), (Number(row[5]) || 0) >= ((Number(row[3]) || 0) + (Number(row[4]) || 0)) ? "Paid" : "Pending"])
         ].slice(-8).reverse().map(([date, party, amount, status]) => `
           <tr><td>${date}</td><td>${party}</td><td>${money(amount)}</td><td><span class="badge ${status === "Paid" ? "paid" : "pending"}">${status}</span></td></tr>
         `).join("");
         document.getElementById("invoiceHistoryRows").innerHTML = data.invoices.map((invoice, index) => `
-          <tr><td>${invoice.no}</td><td>${invoice.date}</td><td>${invoice.customer}</td><td>${money(invoice.total)}</td><td><span class="badge ${(invoice.payment || "Pending") === "Paid" ? "paid" : "pending"}">${invoice.payment || "Pending"}</span></td><td><button class="edit-btn" data-edit-invoice="${index}">Edit</button> <button class="btn" data-print-invoice="${index}">${icons.print} Reprint</button> <button class="delete-btn" data-delete-invoice="${index}">${icons.trash} Delete</button></td></tr>
+          <tr><td>${invoice.no}</td><td>${invoice.date}</td><td>${invoice.customer}</td><td>${money(invoice.total)}</td><td>${money(invoice.paidAmount || 0)}</td><td>${money(Math.max((Number(invoice.total) || 0) - (Number(invoice.paidAmount) || 0), 0))}</td><td>${invoice.paymentMethod || "Cash"}</td><td><span class="badge ${Math.max((Number(invoice.total) || 0) - (Number(invoice.paidAmount) || 0), 0) <= 0 ? "paid" : "pending"}">${Math.max((Number(invoice.total) || 0) - (Number(invoice.paidAmount) || 0), 0) <= 0 ? "Paid" : "Pending"}</span></td><td><button class="edit-btn" data-edit-invoice="${index}">Edit</button> <button class="btn" data-print-invoice="${index}">${icons.print} Reprint</button> <button class="delete-btn" data-delete-invoice="${index}">${icons.trash} Delete</button></td></tr>
         `).join("");
       }
 
       function editPurchase(index = -1) {
-        const row = data.purchases[index] || [`PB-${String(data.purchases.length + 11).padStart(3, "0")}`, "", todayText(), 0, 0, "Pending"];
+        const row = data.purchases[index] || [`PB-${String(data.purchases.length + 11).padStart(3, "0")}`, "", todayText(), 0, 0, 0, "Cash", "Pending"];
         const bill = ask("Bill number", row[0]); if (bill === null) return;
         const vendor = ask("Vendor name", row[1]); if (vendor === null) return;
         const date = ask("Date", row[2]); if (date === null) return;
         const taxable = Number(ask("Taxable amount", row[3])) || 0;
         const gst = Number(ask("GST input amount", row[4])) || 0;
-        const status = ask("Payment complete? Type Paid or Pending", row[5]) || "Pending";
-        data.purchases[index >= 0 ? index : data.purchases.length] = [bill, vendor, date, taxable, gst, status];
+        const total = taxable + gst;
+        const paidAmount = Math.min(Number(ask("Payment entry amount", row[5])) || 0, total);
+        const method = ask("Payment method: Cash, Card, or UPI", row[6] || "Cash") || "Cash";
+        const status = paidAmount >= total ? "Paid" : "Pending";
+        data.purchases[index >= 0 ? index : data.purchases.length] = [bill, vendor, date, taxable, gst, paidAmount, method, status];
         saveAll(); renderAll();
       }
 
@@ -1696,7 +1728,7 @@
       document.getElementById("lineItems").innerHTML = "";
       createEnhancedLine("Product Box 1", 2, "Kg", 12500, 18);
       createEnhancedLine("Product Comer-fon", 1, "Liter", 18500, 18);
-      ["invoiceNo", "invoiceDate", "invoicePayment", "customerName", "customerGst", "customerAddress"].forEach(id => document.getElementById(id)?.addEventListener("input", updateEnhancedInvoice));
+      ["invoiceNo", "invoiceDate", "invoicePaymentMethod", "invoicePaidAmount", "invoicePayment", "customerName", "customerGst", "customerAddress"].forEach(id => document.getElementById(id)?.addEventListener("input", updateEnhancedInvoice));
 
       replaceButton("addLine", () => { createEnhancedLine("", 1, "Kg", 0, 18); updateEnhancedInvoice(); });
       if (!document.getElementById("findInvoice")) {
@@ -1724,6 +1756,8 @@
         if (!confirm("Clear current invoice entry?")) return;
         document.getElementById("invoiceNo").value = `THV-INV-${String(data.invoices.length + 1001)}`;
         document.getElementById("invoiceDate").value = todayText();
+        if (document.getElementById("invoicePaymentMethod")) document.getElementById("invoicePaymentMethod").value = "Cash";
+        if (document.getElementById("invoicePaidAmount")) document.getElementById("invoicePaidAmount").value = 0;
         if (document.getElementById("invoicePayment")) document.getElementById("invoicePayment").value = "Pending";
         document.getElementById("customerName").value = "";
         document.getElementById("customerGst").value = "";
