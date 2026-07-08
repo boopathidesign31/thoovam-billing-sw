@@ -983,6 +983,7 @@
                 <div class="form-grid" style="grid-template-columns:1fr 1fr">
                   <label>Invoice No.<input id="invoiceNo" value="THV-INV-1001"></label>
                   <label>Date<input id="invoiceDate" type="date"></label>
+                  <label>Payment Status<select id="invoicePayment"><option>Pending</option><option>Paid</option></select></label>
                   <label>Customer<input id="customerName" value="Ananya Traders"></label>
                   <label>GSTIN<input id="customerGst" value="32ABCDE1234F1Z5"></label>
                   <label style="grid-column:1/-1">Billing Address<textarea id="customerAddress">Kochi, Kerala</textarea></label>
@@ -1037,7 +1038,7 @@
           <div class="topline"><h1>Purchases & Bills</h1><div class="actions"><button class="delete-btn" id="deleteAllPurchases"><span data-icon="trash"></span>Remove</button><button class="btn primary" id="addPurchase"><span data-icon="plus"></span>Record Bill</button></div></div>
           <article class="panel">
             <div class="panel-title">Supplier Bills</div>
-            <div style="overflow:auto"><table><thead><tr><th>Bill No.</th><th>Vendor</th><th>Date</th><th>Taxable</th><th>GST Input</th><th>Status</th><th>Action</th></tr></thead><tbody id="purchaseRows"></tbody></table></div>
+            <div style="overflow:auto"><table><thead><tr><th>Bill No.</th><th>Vendor</th><th>Date</th><th>Taxable</th><th>GST Input</th><th>Payment</th><th>Action</th></tr></thead><tbody id="purchaseRows"></tbody></table></div>
           </article>
         </div>
 
@@ -1058,7 +1059,7 @@
           </div>
           <article class="panel" style="margin-top:16px">
             <div class="panel-title">Expense History</div>
-            <div style="overflow:auto"><table><thead><tr><th>No.</th><th>Category</th><th>Date</th><th>Amount</th><th>GST</th><th>Action</th></tr></thead><tbody id="expenseRows"></tbody></table></div>
+            <div style="overflow:auto"><table><thead><tr><th>No.</th><th>Vendor</th><th>Category</th><th>Date</th><th>Amount</th><th>GST</th><th>Action</th></tr></thead><tbody id="expenseRows"></tbody></table></div>
           </article>
         </div>
 
@@ -1405,9 +1406,9 @@
           ["Product Sals", "THV-PSL", 30, 10, 76000]
         ],
         expenses: [
-          ["EXP-001", "Rent", "08/12/2023", 18500, 3330],
-          ["EXP-002", "Utilities", "07/12/2023", 8400, 1512],
-          ["EXP-003", "Supplies", "06/12/2023", 12700, 2286]
+          ["EXP-001", "Kairali Supplies", "Rent", "08/12/2023", 18500, 3330],
+          ["EXP-002", "Prime Utilities", "Utilities", "07/12/2023", 8400, 1512],
+          ["EXP-003", "Coastal Packaging", "Supplies", "06/12/2023", 12700, 2286]
         ],
         customers: [
           ["Ananya Traders", "32ABCDE1234F1Z5", "+91 98765 43210", 18500, "Active"],
@@ -1437,6 +1438,9 @@
         vendors: read("thoovamVendors", defaults.vendors),
         settings: read("thoovamSettings", defaults.settings)
       };
+      data.invoices = data.invoices.map(invoice => ({ payment: "Pending", ...invoice }));
+      data.expenses = data.expenses.map(row => row.length === 5 ? [row[0], "", row[1], row[2], row[3], row[4]] : row);
+      data.purchases = data.purchases.map(row => [row[0], row[1], row[2], row[3], row[4], row[5] || "Pending"]);
 
       function replaceButton(id, handler) {
         const oldButton = document.getElementById(id);
@@ -1467,7 +1471,7 @@
             <div class="panel-title">Saved Invoices</div>
             <div style="overflow:auto">
               <table>
-                <thead><tr><th>Invoice No.</th><th>Date</th><th>Customer</th><th>Amount</th><th>Action</th></tr></thead>
+                <thead><tr><th>Invoice No.</th><th>Date</th><th>Customer</th><th>Amount</th><th>Payment</th><th>Action</th></tr></thead>
                 <tbody id="invoiceHistoryRows"></tbody>
               </table>
             </div>
@@ -1540,6 +1544,7 @@
         return {
           no: document.getElementById("invoiceNo").value || `THV-INV-${Date.now()}`,
           date: document.getElementById("invoiceDate").value || todayText(),
+          payment: document.getElementById("invoicePayment")?.value || "Pending",
           customer: document.getElementById("customerName").value || "Customer",
           gstin: document.getElementById("customerGst").value || "",
           address: document.getElementById("customerAddress").value || "",
@@ -1551,6 +1556,7 @@
       function loadInvoice(invoice) {
         document.getElementById("invoiceNo").value = invoice.no;
         document.getElementById("invoiceDate").value = invoice.date;
+        if (document.getElementById("invoicePayment")) document.getElementById("invoicePayment").value = invoice.payment || "Pending";
         document.getElementById("customerName").value = invoice.customer;
         document.getElementById("customerGst").value = invoice.gstin;
         document.getElementById("customerAddress").value = invoice.address;
@@ -1562,6 +1568,20 @@
       }
 
       function renderAll() {
+        const customerDueByName = data.invoices.reduce((totals, invoice) => {
+          if ((invoice.payment || "Pending") !== "Paid") {
+            const key = (invoice.customer || "").trim().toLowerCase();
+            totals[key] = (totals[key] || 0) + (Number(invoice.total) || 0);
+          }
+          return totals;
+        }, {});
+        const vendorPayableByName = data.purchases.reduce((totals, bill) => {
+          if ((bill[5] || "Pending") !== "Paid") {
+            const key = (bill[1] || "").trim().toLowerCase();
+            totals[key] = (totals[key] || 0) + (Number(bill[3]) || 0) + (Number(bill[4]) || 0);
+          }
+          return totals;
+        }, {});
         document.getElementById("inventoryTable").innerHTML = data.inventory.map(([name,, qty, reorder]) => `
           <tr><td>${name}</td><td>${qty}</td><td>${reorder > qty ? '<span class="badge low">Low-stock</span>' : reorder}</td></tr>
         `).join("");
@@ -1574,23 +1594,23 @@
         document.getElementById("purchaseRows").innerHTML = data.purchases.map(([bill, vendor, date, taxable, gst, status], index) => `
           <tr><td>${bill}</td><td>${vendor}</td><td>${date}</td><td>${money(taxable)}</td><td>${money(gst)}</td><td><span class="badge ${status === "Paid" ? "paid" : "pending"}">${status}</span></td><td>${actionButtons("purchase", index)}</td></tr>
         `).join("");
-        document.getElementById("expenseRows").innerHTML = data.expenses.map(([no, category, date, amount, gst], index) => `
-          <tr><td>${no}</td><td>${category}</td><td>${date}</td><td>${money(amount)}</td><td>${money(gst)}</td><td>${actionButtons("expense", index)}</td></tr>
+        document.getElementById("expenseRows").innerHTML = data.expenses.map(([no, vendor, category, date, amount, gst], index) => `
+          <tr><td>${no}</td><td>${vendor || "-"}</td><td>${category}</td><td>${date}</td><td>${money(amount)}</td><td>${money(gst)}</td><td>${actionButtons("expense", index)}</td></tr>
         `).join("");
         document.getElementById("customerRows").innerHTML = data.customers.map(([name, gst, phone, due, status], index) => `
-          <tr><td>${name}</td><td>${gst}</td><td>${phone}</td><td>${money(due)}</td><td><span class="badge ${due ? "pending" : "paid"}">${status}</span></td><td>${actionButtons("customer", index)}</td></tr>
+          <tr><td>${name}</td><td>${gst}</td><td>${phone}</td><td>${money(customerDueByName[(name || "").trim().toLowerCase()] || 0)}</td><td><span class="badge ${(customerDueByName[(name || "").trim().toLowerCase()] || 0) ? "pending" : "paid"}">${(customerDueByName[(name || "").trim().toLowerCase()] || 0) ? "Due" : "Clear"}</span></td><td>${actionButtons("customer", index)}</td></tr>
         `).join("");
         document.getElementById("vendorRows").innerHTML = data.vendors.map(([name, gst, phone, due, status], index) => `
-          <tr><td>${name}</td><td>${gst}</td><td>${phone}</td><td>${money(due)}</td><td><span class="badge ${status === "Paid" ? "paid" : "pending"}">${status}</span></td><td>${actionButtons("vendor", index)}</td></tr>
+          <tr><td>${name}</td><td>${gst}</td><td>${phone}</td><td>${money(vendorPayableByName[(name || "").trim().toLowerCase()] || due)}</td><td><span class="badge ${(vendorPayableByName[(name || "").trim().toLowerCase()] || 0) ? "pending" : "paid"}">${(vendorPayableByName[(name || "").trim().toLowerCase()] || 0) ? "Pending" : "Clear"}</span></td><td>${actionButtons("vendor", index)}</td></tr>
         `).join("");
         document.getElementById("transactionsTable").innerHTML = [
-          ...data.invoices.map(inv => [inv.date, `Invoice ${inv.no}`, inv.total, "Paid"]),
+          ...data.invoices.map(inv => [inv.date, `Invoice ${inv.no}`, inv.total, inv.payment || "Pending"]),
           ...data.purchases.map(row => [row[2], `Purchase ${row[0]}`, row[3], row[5]])
         ].slice(-8).reverse().map(([date, party, amount, status]) => `
           <tr><td>${date}</td><td>${party}</td><td>${money(amount)}</td><td><span class="badge ${status === "Paid" ? "paid" : "pending"}">${status}</span></td></tr>
         `).join("");
         document.getElementById("invoiceHistoryRows").innerHTML = data.invoices.map((invoice, index) => `
-          <tr><td>${invoice.no}</td><td>${invoice.date}</td><td>${invoice.customer}</td><td>${money(invoice.total)}</td><td><button class="edit-btn" data-edit-invoice="${index}">Edit</button> <button class="btn" data-print-invoice="${index}">${icons.print} Reprint</button> <button class="delete-btn" data-delete-invoice="${index}">${icons.trash} Delete</button></td></tr>
+          <tr><td>${invoice.no}</td><td>${invoice.date}</td><td>${invoice.customer}</td><td>${money(invoice.total)}</td><td><span class="badge ${(invoice.payment || "Pending") === "Paid" ? "paid" : "pending"}">${invoice.payment || "Pending"}</span></td><td><button class="edit-btn" data-edit-invoice="${index}">Edit</button> <button class="btn" data-print-invoice="${index}">${icons.print} Reprint</button> <button class="delete-btn" data-delete-invoice="${index}">${icons.trash} Delete</button></td></tr>
         `).join("");
       }
 
@@ -1601,7 +1621,7 @@
         const date = ask("Date", row[2]); if (date === null) return;
         const taxable = Number(ask("Taxable amount", row[3])) || 0;
         const gst = Number(ask("GST input amount", row[4])) || 0;
-        const status = ask("Status: Paid or Pending", row[5]) || "Pending";
+        const status = ask("Payment complete? Type Paid or Pending", row[5]) || "Pending";
         data.purchases[index >= 0 ? index : data.purchases.length] = [bill, vendor, date, taxable, gst, status];
         saveAll(); renderAll();
       }
@@ -1618,13 +1638,15 @@
       }
 
       function editExpense(index = -1) {
-        const row = data.expenses[index] || [`EXP-${String(data.expenses.length + 1).padStart(3, "0")}`, "", todayText(), 0, 0];
+        const oldRow = data.expenses[index] || [`EXP-${String(data.expenses.length + 1).padStart(3, "0")}`, "", "", todayText(), 0, 0];
+        const row = oldRow.length === 5 ? [oldRow[0], "", oldRow[1], oldRow[2], oldRow[3], oldRow[4]] : oldRow;
         const no = ask("Expense number", row[0]); if (no === null) return;
-        const category = ask("Category", row[1]); if (category === null) return;
-        const date = ask("Date", row[2]); if (date === null) return;
-        const amount = Number(ask("Amount", row[3])) || 0;
-        const gst = Number(ask("GST amount", row[4])) || 0;
-        data.expenses[index >= 0 ? index : data.expenses.length] = [no, category, date, amount, gst];
+        const vendor = ask("Vendor name", row[1]); if (vendor === null) return;
+        const category = ask("Category", row[2]); if (category === null) return;
+        const date = ask("Date", row[3]); if (date === null) return;
+        const amount = Number(ask("Amount", row[4])) || 0;
+        const gst = Number(ask("GST amount", row[5])) || 0;
+        data.expenses[index >= 0 ? index : data.expenses.length] = [no, vendor, category, date, amount, gst];
         saveAll(); renderAll();
       }
 
@@ -1634,8 +1656,8 @@
         const name = ask(type === "customers" ? "Customer name" : "Vendor name", row[0]); if (name === null) return;
         const gst = ask("GSTIN", row[1]); if (gst === null) return;
         const phone = ask("Phone", row[2]); if (phone === null) return;
-        const due = Number(ask(type === "customers" ? "Outstanding amount" : "Payable amount", row[3])) || 0;
-        const status = ask("Status", row[4]) || "Active";
+        const due = type === "customers" ? 0 : (Number(ask("Opening payable amount", row[3])) || 0);
+        const status = type === "customers" ? "Auto" : (ask("Status", row[4]) || "Active");
         list[index >= 0 ? index : list.length] = [name, gst, phone, due, status];
         saveAll(); renderAll();
       }
@@ -1674,7 +1696,7 @@
       document.getElementById("lineItems").innerHTML = "";
       createEnhancedLine("Product Box 1", 2, "Kg", 12500, 18);
       createEnhancedLine("Product Comer-fon", 1, "Liter", 18500, 18);
-      ["invoiceNo", "invoiceDate", "customerName", "customerGst", "customerAddress"].forEach(id => document.getElementById(id).addEventListener("input", updateEnhancedInvoice));
+      ["invoiceNo", "invoiceDate", "invoicePayment", "customerName", "customerGst", "customerAddress"].forEach(id => document.getElementById(id)?.addEventListener("input", updateEnhancedInvoice));
 
       replaceButton("addLine", () => { createEnhancedLine("", 1, "Kg", 0, 18); updateEnhancedInvoice(); });
       if (!document.getElementById("findInvoice")) {
@@ -1702,6 +1724,7 @@
         if (!confirm("Clear current invoice entry?")) return;
         document.getElementById("invoiceNo").value = `THV-INV-${String(data.invoices.length + 1001)}`;
         document.getElementById("invoiceDate").value = todayText();
+        if (document.getElementById("invoicePayment")) document.getElementById("invoicePayment").value = "Pending";
         document.getElementById("customerName").value = "";
         document.getElementById("customerGst").value = "";
         document.getElementById("customerAddress").value = "";
