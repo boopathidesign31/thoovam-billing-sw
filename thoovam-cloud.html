@@ -937,24 +937,24 @@
 
           <div class="dashboard">
             <article class="metric">
-              <div><p>Total Sales</p><strong id="salesMetric">₹1,45,000</strong></div>
+              <div><p>Total Sales</p><strong id="salesMetric">₹0</strong></div>
               <span class="mini blue" data-icon="trend"></span>
-              <span class="trend">↗ 1.37%</span>
+              <span class="trend">Live</span>
             </article>
             <article class="metric">
-              <div><p>Total Purchases</p><strong>₹82,500</strong></div>
+              <div><p>Total Purchases</p><strong id="purchaseMetric">₹0</strong></div>
               <span class="mini blue" data-icon="cart"></span>
-              <span class="trend">↗ 1.82%</span>
+              <span class="trend">Live</span>
             </article>
             <article class="metric">
-              <div><p>Net Profit</p><strong>₹62,500</strong></div>
+              <div><p>Net Profit</p><strong id="profitMetric">₹0</strong></div>
               <span class="mini green" data-icon="trend"></span>
-              <span class="trend">↗ 1.09%</span>
+              <span class="trend">Live</span>
             </article>
             <article class="metric">
-              <div><p>Current Stock Value</p><strong>₹2,30,000</strong></div>
+              <div><p>Current Stock Value</p><strong id="stockMetric">₹0</strong></div>
               <span class="mini green" data-icon="box"></span>
-              <span class="trend">↗ 30%</span>
+              <span class="trend">Live</span>
             </article>
 
             <article class="panel span-2">
@@ -963,7 +963,7 @@
                 <select class="select" aria-label="Sales period"><option>Last 6 Months</option><option>This Year</option></select>
               </div>
               <div class="panel-body chart-wrap">
-                <div class="bars" aria-label="Bar chart">
+                <div class="bars" id="monthlyChart" aria-label="Bar chart">
                   <div class="axis"><span>₹4,000</span><span>₹3,000</span><span>₹2,000</span><span>₹1,000</span><span>0</span></div>
                   <div class="bar-group"><div class="bar" style="height:67%"></div><div class="bar purchase" style="height:39%"></div></div>
                   <div class="bar-group"><div class="bar" style="height:78%"></div><div class="bar purchase" style="height:50%"></div></div>
@@ -972,7 +972,7 @@
                   <div class="bar-group"><div class="bar" style="height:76%"></div><div class="bar purchase" style="height:60%"></div></div>
                   <div class="bar-group"><div class="bar" style="height:88%"></div><div class="bar purchase" style="height:70%"></div></div>
                 </div>
-                <div class="months"><span></span><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span></div>
+                <div class="months" id="monthlyLabels"><span></span><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span></div>
               </div>
             </article>
 
@@ -994,9 +994,9 @@
               <div class="panel-title">GST Snapshot</div>
               <div class="panel-body gst-grid">
                 <div>Current month calculated</div>
-                <div class="gst-row"><span>Total GST Output</span><strong>₹26,100</strong></div>
-                <div class="gst-row"><span>Total GST Input (ITC)</span><strong>₹14,850</strong></div>
-                <div class="gst-row"><span>Net GST Payable</span><strong>₹11,250</strong></div>
+                <div class="gst-row"><span>Total GST Output</span><strong data-gst-output>₹0</strong></div>
+                <div class="gst-row"><span>Total GST Input (ITC)</span><strong data-gst-input>₹0</strong></div>
+                <div class="gst-row"><span>Net GST Payable</span><strong data-gst-payable>₹0</strong></div>
                 <a href="#gst" data-screen-jump="gst" style="color:#15577e;text-decoration:none;">GST Return Filing Overview →</a>
               </div>
             </article>
@@ -1014,9 +1014,9 @@
             <article class="panel span-2">
               <div class="panel-title"><span>GST Snapshot</span><span style="font-weight:500;color:#475569">Current Month →</span></div>
               <div class="panel-body gst-summary">
-                <div><p>Total GST Output</p><strong>₹26,100</strong></div>
-                <div><p>Total GST Input (ITC)</p><strong>₹14,850</strong></div>
-                <div><p>Net GST Payable</p><strong>₹11,250</strong></div>
+                <div><p>Total GST Output</p><strong data-gst-output>₹0</strong></div>
+                <div><p>Total GST Input (ITC)</p><strong data-gst-input>₹0</strong></div>
+                <div><p>Net GST Payable</p><strong data-gst-payable>₹0</strong></div>
               </div>
             </article>
 
@@ -1164,11 +1164,11 @@
         <div class="screen" id="gst">
           <div class="topline"><h1>GST Reports</h1><div class="actions"><button class="delete-btn" id="clearGstReport"><span data-icon="trash"></span>Remove</button><button class="btn primary"><span data-icon="download"></span>Export Report</button></div></div>
           <div class="dashboard">
-            <article class="metric"><div><p>Output Tax</p><strong>₹26,100</strong></div><span class="mini blue" data-icon="file"></span></article>
-            <article class="metric"><div><p>Input Credit</p><strong>₹14,850</strong></div><span class="mini green" data-icon="file"></span></article>
-            <article class="metric"><div><p>Payable</p><strong>₹11,250</strong></div><span class="mini blue" data-icon="receipt"></span></article>
+            <article class="metric"><div><p>Output Tax</p><strong data-gst-output>₹0</strong></div><span class="mini blue" data-icon="file"></span></article>
+            <article class="metric"><div><p>Input Credit</p><strong data-gst-input>₹0</strong></div><span class="mini green" data-icon="file"></span></article>
+            <article class="metric"><div><p>Payable</p><strong data-gst-payable>₹0</strong></div><span class="mini blue" data-icon="receipt"></span></article>
             <article class="metric"><div><p>Return Status</p><strong style="font-size:24px">Ready</strong></div><span class="mini green" data-icon="trend"></span></article>
-            <article class="panel span-full"><div class="panel-title">GST Filing Overview</div><div style="overflow:auto"><table><thead><tr><th>Return</th><th>Period</th><th>Sales Tax</th><th>ITC</th><th>Payable</th><th>Status</th></tr></thead><tbody><tr><td>GSTR-1</td><td>June 2026</td><td>₹26,100</td><td>-</td><td>-</td><td><span class="badge paid">Ready</span></td></tr><tr><td>GSTR-3B</td><td>June 2026</td><td>₹26,100</td><td>₹14,850</td><td>₹11,250</td><td><span class="badge pending">Review</span></td></tr></tbody></table></div></article>
+            <article class="panel span-full"><div class="panel-title">GST Filing Overview</div><div style="overflow:auto"><table><thead><tr><th>Return</th><th>Period</th><th>Sales Tax</th><th>ITC</th><th>Payable</th><th>Status</th></tr></thead><tbody id="gstReportRows"></tbody></table></div></article>
           </div>
         </div>
 
@@ -1939,8 +1939,79 @@
         showScreen("sales");
       }
 
+      function parseRecordDate(value) {
+        if (!value) return null;
+        const text = String(value);
+        const parts = text.split(/[\/-]/).map(Number);
+        if (text.includes("/") && parts.length === 3) {
+          const [day, month, year] = parts;
+          const parsed = new Date(year, month - 1, day);
+          return Number.isNaN(parsed.getTime()) ? null : parsed;
+        }
+        const iso = new Date(text);
+        if (!Number.isNaN(iso.getTime())) return iso;
+        return null;
+      }
+
+      function invoiceGst(invoice) {
+        return (invoice.items || []).reduce((sum, line) => {
+          const base = (Number(line.qty) || 0) * (Number(line.rate) || 0);
+          return sum + base * (Number(line.gst) || 0) / 100;
+        }, 0);
+      }
+
+      function renderLiveDashboard() {
+        const salesTotal = data.invoices.reduce((sum, invoice) => sum + (Number(invoice.total) || 0), 0);
+        const purchaseTotal = data.purchases.reduce((sum, bill) => sum + (Number(bill[3]) || 0) + (Number(bill[4]) || 0), 0);
+        const stockTotal = data.inventory.reduce((sum, product) => sum + (Number(product[4]) || 0), 0);
+        const gstOutput = data.invoices.reduce((sum, invoice) => sum + invoiceGst(invoice), 0);
+        const gstInput = data.purchases.reduce((sum, bill) => sum + (Number(bill[4]) || 0), 0);
+        const gstPayable = Math.max(gstOutput - gstInput, 0);
+
+        document.getElementById("salesMetric").textContent = money(salesTotal);
+        document.getElementById("purchaseMetric").textContent = money(purchaseTotal);
+        document.getElementById("profitMetric").textContent = money(salesTotal - purchaseTotal);
+        document.getElementById("stockMetric").textContent = money(stockTotal);
+        document.querySelectorAll("[data-gst-output]").forEach(element => element.textContent = money(gstOutput));
+        document.querySelectorAll("[data-gst-input]").forEach(element => element.textContent = money(gstInput));
+        document.querySelectorAll("[data-gst-payable]").forEach(element => element.textContent = money(gstPayable));
+
+        const now = new Date();
+        const months = Array.from({ length: 6 }, (_, offset) => {
+          const date = new Date(now.getFullYear(), now.getMonth() - (5 - offset), 1);
+          return {
+            year: date.getFullYear(),
+            month: date.getMonth(),
+            label: date.toLocaleString("en-IN", { month: "short" }),
+            sales: 0,
+            purchases: 0
+          };
+        });
+        const addToMonth = (dateValue, amount, field) => {
+          const date = parseRecordDate(dateValue);
+          if (!date) return;
+          const bucket = months.find(item => item.year === date.getFullYear() && item.month === date.getMonth());
+          if (bucket) bucket[field] += Number(amount) || 0;
+        };
+        data.invoices.forEach(invoice => addToMonth(invoice.date, invoice.total, "sales"));
+        data.purchases.forEach(bill => addToMonth(bill[2], (Number(bill[3]) || 0) + (Number(bill[4]) || 0), "purchases"));
+        const maximum = Math.max(...months.flatMap(item => [item.sales, item.purchases]), 1);
+        document.getElementById("monthlyChart").innerHTML = `
+          <div class="axis"><span>${money(maximum)}</span><span>${money(maximum * .75)}</span><span>${money(maximum * .5)}</span><span>${money(maximum * .25)}</span><span>0</span></div>
+          ${months.map(item => `<div class="bar-group"><div class="bar" title="Sales ${money(item.sales)}" style="height:${item.sales / maximum * 100}%"></div><div class="bar purchase" title="Purchases ${money(item.purchases)}" style="height:${item.purchases / maximum * 100}%"></div></div>`).join("")}
+        `;
+        document.getElementById("monthlyLabels").innerHTML = `<span></span>${months.map(item => `<span>${item.label}</span>`).join("")}`;
+
+        const period = now.toLocaleString("en-IN", { month: "long", year: "numeric" });
+        document.getElementById("gstReportRows").innerHTML = `
+          <tr><td>GSTR-1</td><td>${period}</td><td>${money(gstOutput)}</td><td>-</td><td>-</td><td><span class="badge paid">Ready</span></td></tr>
+          <tr><td>GSTR-3B</td><td>${period}</td><td>${money(gstOutput)}</td><td>${money(gstInput)}</td><td>${money(gstPayable)}</td><td><span class="badge ${gstPayable > 0 ? "pending" : "paid"}">${gstPayable > 0 ? "Payable" : "Nil"}</span></td></tr>
+        `;
+      }
+
       function renderAll() {
         syncPartiesAndBalances();
+        renderLiveDashboard();
         const customerDueByName = data.invoices.reduce((totals, invoice) => {
           const balance = Math.max((Number(invoice.total) || 0) - (Number(invoice.paidAmount) || 0), 0);
           if (balance > 0) {
@@ -2254,6 +2325,10 @@
         renderAll();
       });
       replaceButton("deleteAllPayments", () => { if (confirm("Remove all payment entries?")) { data.payments = []; saveAll(); renderAll(); } });
+      replaceButton("clearGstReport", () => {
+        renderLiveDashboard();
+        alert("GST Report is calculated automatically from saved sales and purchase bills.");
+      });
 
       loadSettings();
       updateEnhancedInvoice();
