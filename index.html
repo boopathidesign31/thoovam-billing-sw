@@ -1532,7 +1532,16 @@
             ...(options.headers || {})
           }
         });
-        if (!response.ok) throw new Error((await response.json().catch(() => ({}))).msg || `Cloud error ${response.status}`);
+        if (!response.ok) {
+          const details = await response.json().catch(() => ({}));
+          throw new Error(
+            details.error_description ||
+            details.message ||
+            details.msg ||
+            details.error ||
+            `Cloud error ${response.status}`
+          );
+        }
         return response.status === 204 ? null : response.json();
       }
 
@@ -1613,7 +1622,7 @@
         setCloudStatus("Cloud: signing in...");
         signInCloud(email, password).catch(error => {
           setCloudStatus("Cloud: sign-in failed", "error");
-          alert("Cloud sign-in failed. Check email, password, and Supabase setup.");
+          alert(`Cloud sign-in failed: ${error.message}`);
           console.error(error);
         });
       }
