@@ -1,0 +1,18 @@
+{
+  "name": "THOOVAM Billing & Accounts",
+  "short_name": "THOOVAM",
+  "description": "Billing, accounting, inventory and payment management",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#f2f6fa",
+  "theme_color": "#1f6fa3",
+  "icons": [
+    {
+      "src": "thoovam-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

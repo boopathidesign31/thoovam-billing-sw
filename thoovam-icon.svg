@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="72" fill="#1f6fa3"/>
+  <path d="M121 120c100 0 189-23 270-69-3 113-56 180-158 201-50 11-78 49-83 115-38-57-48-110-28-159 19-47 57-76 114-88-47 5-86 24-115 57z" fill="#55b96a"/>
+  <path d="M129 146c34 45 47 91 39 137-7 43-2 88 16 136-59-41-88-96-85-165 2-46 12-82 30-108z" fill="#d9f3e3"/>
+  <text x="256" y="462" text-anchor="middle" font-family="Arial, sans-serif" font-size="64" font-weight="700" fill="#fff">THOOVAM</text>
+</svg>
