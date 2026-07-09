@@ -1241,11 +1241,11 @@
         </div>
 
         <div class="screen" id="gst">
-          <div class="topline"><h1>GST Reports</h1><div class="actions"><button class="delete-btn" id="clearGstReport"><span data-icon="trash"></span>Remove</button><button class="btn primary"><span data-icon="download"></span>Export Report</button></div></div>
+          <div class="topline"><h1>GST Reports</h1><div class="actions"><label>Report Month<input class="select" id="gstMonth" type="month"></label><button class="delete-btn" id="clearGstReport"><span data-icon="trash"></span>Remove</button><button class="btn primary" id="exportGstReport"><span data-icon="download"></span>Export Report</button></div></div>
           <div class="dashboard">
-            <article class="metric"><div><p>Output Tax</p><strong data-gst-output>₹0</strong></div><span class="mini blue" data-icon="file"></span></article>
-            <article class="metric"><div><p>Input Credit</p><strong data-gst-input>₹0</strong></div><span class="mini green" data-icon="file"></span></article>
-            <article class="metric"><div><p>Payable</p><strong data-gst-payable>₹0</strong></div><span class="mini blue" data-icon="receipt"></span></article>
+            <article class="metric"><div><p>Output Tax</p><strong data-report-gst-output>₹0</strong></div><span class="mini blue" data-icon="file"></span></article>
+            <article class="metric"><div><p>Input Credit</p><strong data-report-gst-input>₹0</strong></div><span class="mini green" data-icon="file"></span></article>
+            <article class="metric"><div><p>Payable</p><strong data-report-gst-payable>₹0</strong></div><span class="mini blue" data-icon="receipt"></span></article>
             <article class="metric"><div><p>Return Status</p><strong style="font-size:24px">Ready</strong></div><span class="mini green" data-icon="trend"></span></article>
             <article class="panel span-full"><div class="panel-title">GST Filing Overview</div><div style="overflow:auto"><table><thead><tr><th>Return</th><th>Period</th><th>Sales Tax</th><th>ITC</th><th>Payable</th><th>Status</th></tr></thead><tbody id="gstReportRows"></tbody></table></div></article>
           </div>
@@ -2167,21 +2167,83 @@
         }, 0);
       }
 
+      function exportGstReport() {
+        const selectedMonth = document.getElementById("gstMonth").value;
+        if (!selectedMonth) {
+          alert("Select a GST report month first.");
+          return;
+        }
+        const monthKey = value => {
+          const date = parseRecordDate(value);
+          return date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}` : "";
+        };
+        const invoices = data.invoices.filter(invoice => monthKey(invoice.date) === selectedMonth);
+        const bills = data.purchases.filter(bill => monthKey(bill[2]) === selectedMonth);
+        const output = invoices.reduce((sum, invoice) => sum + invoiceGst(invoice), 0);
+        const input = bills.reduce((sum, bill) => sum + (Number(bill[4]) || 0), 0);
+        const payable = Math.max(output - input, 0);
+        const csvCell = value => `"${String(value ?? "").replaceAll('"', '""')}"`;
+        const rows = [
+          ["THOOVAM GST REPORT", selectedMonth],
+          ["Output GST", output],
+          ["Input GST (ITC)", input],
+          ["Net GST Payable", payable],
+          [],
+          ["Type", "Document No.", "Date", "Party", "Taxable Amount", "GST Amount", "Total Amount"],
+          ...invoices.map(invoice => {
+            const taxable = (invoice.items || []).reduce((sum, line) => sum + (Number(line.qty) || 0) * (Number(line.rate) || 0), 0);
+            const gst = invoiceGst(invoice);
+            return ["Sales Invoice", invoice.no, invoice.date, invoice.customer, taxable, gst, Number(invoice.total) || taxable + gst];
+          }),
+          ...bills.map(bill => ["Purchase Bill", bill[0], bill[2], bill[1], Number(bill[3]) || 0, Number(bill[4]) || 0, (Number(bill[3]) || 0) + (Number(bill[4]) || 0)])
+        ];
+        const csv = "\uFEFF" + rows.map(row => row.map(csvCell).join(",")).join("\r\n");
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `THOOVAM-GST-${selectedMonth}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+
       function renderLiveDashboard() {
         const salesTotal = data.invoices.reduce((sum, invoice) => sum + (Number(invoice.total) || 0), 0);
         const purchaseTotal = data.purchases.reduce((sum, bill) => sum + (Number(bill[3]) || 0) + (Number(bill[4]) || 0), 0);
         const stockTotal = data.inventory.reduce((sum, product) => sum + (Number(product[4]) || 0), 0);
-        const gstOutput = data.invoices.reduce((sum, invoice) => sum + invoiceGst(invoice), 0);
-        const gstInput = data.purchases.reduce((sum, bill) => sum + (Number(bill[4]) || 0), 0);
-        const gstPayable = Math.max(gstOutput - gstInput, 0);
+        const now = new Date();
+        const currentMonthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+        const recordMonthKey = value => {
+          const date = parseRecordDate(value);
+          return date ? `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}` : "";
+        };
+        const gstForMonth = monthKey => {
+          const output = data.invoices
+            .filter(invoice => recordMonthKey(invoice.date) === monthKey)
+            .reduce((sum, invoice) => sum + invoiceGst(invoice), 0);
+          const input = data.purchases
+            .filter(bill => recordMonthKey(bill[2]) === monthKey)
+            .reduce((sum, bill) => sum + (Number(bill[4]) || 0), 0);
+          return { output, input, payable: Math.max(output - input, 0) };
+        };
+        const currentGst = gstForMonth(currentMonthKey);
+        const gstMonth = document.getElementById("gstMonth");
+        if (!gstMonth.value) gstMonth.value = data.settings.gstReportMonth || currentMonthKey;
+        const reportMonthKey = gstMonth.value || currentMonthKey;
+        const reportGst = gstForMonth(reportMonthKey);
 
         document.getElementById("salesMetric").textContent = money(salesTotal);
         document.getElementById("purchaseMetric").textContent = money(purchaseTotal);
         document.getElementById("profitMetric").textContent = money(salesTotal - purchaseTotal);
         document.getElementById("stockMetric").textContent = money(stockTotal);
-        document.querySelectorAll("[data-gst-output]").forEach(element => element.textContent = money(gstOutput));
-        document.querySelectorAll("[data-gst-input]").forEach(element => element.textContent = money(gstInput));
-        document.querySelectorAll("[data-gst-payable]").forEach(element => element.textContent = money(gstPayable));
+        document.querySelectorAll("[data-gst-output]").forEach(element => element.textContent = money(currentGst.output));
+        document.querySelectorAll("[data-gst-input]").forEach(element => element.textContent = money(currentGst.input));
+        document.querySelectorAll("[data-gst-payable]").forEach(element => element.textContent = money(currentGst.payable));
+        document.querySelectorAll("[data-report-gst-output]").forEach(element => element.textContent = money(reportGst.output));
+        document.querySelectorAll("[data-report-gst-input]").forEach(element => element.textContent = money(reportGst.input));
+        document.querySelectorAll("[data-report-gst-payable]").forEach(element => element.textContent = money(reportGst.payable));
 
         const expenseTotals = data.expenses.reduce((totals, expense) => {
           const category = expense[2] || "Others";
@@ -2209,7 +2271,6 @@
           ).join("");
         }
 
-        const now = new Date();
         const months = Array.from({ length: 6 }, (_, offset) => {
           const date = new Date(now.getFullYear(), now.getMonth() - (5 - offset), 1);
           return {
@@ -2235,10 +2296,12 @@
         `;
         document.getElementById("monthlyLabels").innerHTML = `<span></span>${months.map(item => `<span>${item.label}</span>`).join("")}`;
 
-        const period = now.toLocaleString("en-IN", { month: "long", year: "numeric" });
+        const [reportYear, reportMonthNumber] = reportMonthKey.split("-").map(Number);
+        const reportDate = new Date(reportYear, reportMonthNumber - 1, 1);
+        const period = reportDate.toLocaleString("en-IN", { month: "long", year: "numeric" });
         document.getElementById("gstReportRows").innerHTML = `
-          <tr><td>GSTR-1</td><td>${period}</td><td>${money(gstOutput)}</td><td>-</td><td>-</td><td><span class="badge paid">Ready</span></td></tr>
-          <tr><td>GSTR-3B</td><td>${period}</td><td>${money(gstOutput)}</td><td>${money(gstInput)}</td><td>${money(gstPayable)}</td><td><span class="badge ${gstPayable > 0 ? "pending" : "paid"}">${gstPayable > 0 ? "Payable" : "Nil"}</span></td></tr>
+          <tr><td>GSTR-1</td><td>${period}</td><td>${money(reportGst.output)}</td><td>-</td><td>-</td><td><span class="badge paid">Ready</span></td></tr>
+          <tr><td>GSTR-3B</td><td>${period}</td><td>${money(reportGst.output)}</td><td>${money(reportGst.input)}</td><td>${money(reportGst.payable)}</td><td><span class="badge ${reportGst.payable > 0 ? "pending" : "paid"}">${reportGst.payable > 0 ? "Payable" : "Nil"}</span></td></tr>
         `;
       }
 
@@ -2525,6 +2588,12 @@
 
       document.getElementById("paymentPartyType")?.addEventListener("change", renderPaymentParties);
       if (document.getElementById("paymentDate")) document.getElementById("paymentDate").value = todayText();
+      document.getElementById("gstMonth")?.addEventListener("change", event => {
+        data.settings.gstReportMonth = event.target.value;
+        saveAll();
+        renderLiveDashboard();
+      });
+      replaceButton("exportGstReport", exportGstReport);
 
       document.body.addEventListener("click", event => {
         const target = event.target.closest("[data-edit-invoice], [data-print-invoice], [data-delete-invoice], [data-edit-purchase], [data-remove-purchase], [data-edit-stock], [data-remove-stock], [data-edit-expense], [data-remove-expense], [data-edit-customer], [data-remove-customer], [data-edit-vendor], [data-remove-vendor], [data-delete-payment]");
