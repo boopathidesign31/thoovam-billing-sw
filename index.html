@@ -54,6 +54,32 @@
     }
     .cloud-status.offline { color: var(--muted); }
     .cloud-status.error { color: var(--red); border-color: #fecaca; }
+    .cloud-login {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: #edf4f8;
+    }
+    .cloud-login[hidden] { display: none; }
+    .cloud-login-panel {
+      width: min(420px, 100%);
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 28px;
+    }
+    .cloud-login-brand { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+    .cloud-login-brand img { width: 48px; height: 48px; }
+    .cloud-login-brand strong { display: block; font-size: 24px; }
+    .cloud-login-brand span { color: var(--muted); font-size: 13px; }
+    .cloud-login label { display: grid; gap: 7px; margin-top: 15px; font-weight: 700; }
+    .cloud-login input { width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 6px; }
+    .cloud-login button { width: 100%; margin-top: 20px; padding: 12px; border: 0; border-radius: 6px; background: var(--blue); color: #fff; font-weight: 700; cursor: pointer; }
+    .cloud-login-error { min-height: 20px; margin: 12px 0 0; color: var(--red); font-size: 13px; }
 
     button, input, select, textarea {
       font: inherit;
@@ -1479,15 +1505,16 @@
         }
       };
 
+      const fresh = value => JSON.parse(JSON.stringify(value));
       const data = {
-        invoices: read("thoovamInvoices", defaults.invoices),
-        payments: read("thoovamPayments", defaults.payments),
-        purchases: read("thoovamPurchases", defaults.purchases),
-        inventory: read("thoovamInventory", defaults.inventory),
-        expenses: read("thoovamExpenses", defaults.expenses),
-        customers: read("thoovamCustomers", defaults.customers),
-        vendors: read("thoovamVendors", defaults.vendors),
-        settings: read("thoovamSettings", defaults.settings)
+        invoices: fresh(defaults.invoices),
+        payments: fresh(defaults.payments),
+        purchases: fresh(defaults.purchases),
+        inventory: fresh(defaults.inventory),
+        expenses: fresh(defaults.expenses),
+        customers: fresh(defaults.customers),
+        vendors: fresh(defaults.vendors),
+        settings: fresh(defaults.settings)
       };
       let cloudReady = false;
       let cloudTimer = null;
@@ -1537,6 +1564,18 @@
             ...(options.headers || {})
           }
         });
+        if (response.status === 401 && cloudSession?.refresh_token && !options._retried) {
+          const refreshed = await fetch(`${cloudConfig.url}/auth/v1/token?grant_type=refresh_token`, {
+            method: "POST",
+            headers: { apikey: cloudConfig.anonKey, "Content-Type": "application/json" },
+            body: JSON.stringify({ refresh_token: cloudSession.refresh_token })
+          });
+          if (refreshed.ok) {
+            cloudSession = await refreshed.json();
+            write("thoovamCloudSession", cloudSession);
+            return cloudRequest(path, { ...options, _retried: true });
+          }
+        }
         if (!response.ok) {
           const details = await response.json().catch(() => ({}));
           throw new Error(
@@ -1559,6 +1598,49 @@
         await loadCloudData();
       }
 
+      function createLoginGate() {
+        if (document.getElementById("cloudLogin")) return;
+        document.body.insertAdjacentHTML("beforeend", `
+          <div class="cloud-login" id="cloudLogin">
+            <form class="cloud-login-panel" id="cloudLoginForm">
+              <div class="cloud-login-brand">
+                <img src="thoovam-icon.svg" alt="">
+                <div><strong>THOOVAM</strong><span>Billing & Accounts</span></div>
+              </div>
+              <h2>Sign in to your business</h2>
+              <label>Email<input id="cloudEmail" type="email" autocomplete="username" required></label>
+              <label>Password<input id="cloudPassword" type="password" autocomplete="current-password" required></label>
+              <p class="cloud-login-error" id="cloudLoginError"></p>
+              <button type="submit" id="cloudLoginButton">Sign in</button>
+            </form>
+          </div>
+        `);
+        document.getElementById("cloudLoginForm").addEventListener("submit", async event => {
+          event.preventDefault();
+          const button = document.getElementById("cloudLoginButton");
+          const error = document.getElementById("cloudLoginError");
+          button.disabled = true;
+          button.textContent = "Signing in...";
+          error.textContent = "";
+          try {
+            await signInCloud(
+              document.getElementById("cloudEmail").value.trim(),
+              document.getElementById("cloudPassword").value
+            );
+          } catch (loginError) {
+            error.textContent = loginError.message;
+          } finally {
+            button.disabled = false;
+            button.textContent = "Sign in";
+          }
+        });
+      }
+
+      function showLoginGate(show = true) {
+        createLoginGate();
+        document.getElementById("cloudLogin").hidden = !show;
+      }
+
       async function loadCloudData() {
         if (!cloudConfigured() || !cloudSession?.access_token) return;
         setCloudStatus("Cloud: connecting...");
@@ -1575,10 +1657,12 @@
           cloudReady = true;
           renderAll();
           loadSettings();
+          showLoginGate(false);
           setCloudStatus("Cloud: synced");
         } catch (error) {
           cloudReady = false;
-          setCloudStatus("Cloud: sign in again", "error");
+          showLoginGate(true);
+          setCloudStatus("Cloud: connection failed", "error");
           console.error(error);
         }
       }
@@ -1595,7 +1679,8 @@
           cloudReady = true;
           setCloudStatus("Cloud: synced");
         } catch (error) {
-          setCloudStatus("Cloud: offline copy saved", "error");
+          setCloudStatus("Cloud: save failed", "error");
+          alert(`Cloud save failed. Your change was not stored in Supabase: ${error.message}`);
           console.error(error);
         }
       }
@@ -1617,6 +1702,7 @@
             cloudReady = false;
             localStorage.removeItem("thoovamCloudSession");
             setCloudStatus("Cloud: sign in", "offline");
+            showLoginGate(true);
           }
           return;
         }
@@ -1633,14 +1719,11 @@
       }
 
       function saveLocalOnly() {
-        write("thoovamInvoices", data.invoices);
-        write("thoovamPayments", data.payments);
-        write("thoovamPurchases", data.purchases);
-        write("thoovamInventory", data.inventory);
-        write("thoovamExpenses", data.expenses);
-        write("thoovamCustomers", data.customers);
-        write("thoovamVendors", data.vendors);
-        write("thoovamSettings", data.settings);
+        [
+          "thoovamInvoices", "thoovamPayments", "thoovamPurchases",
+          "thoovamInventory", "thoovamExpenses", "thoovamCustomers",
+          "thoovamVendors", "thoovamSettings"
+        ].forEach(key => localStorage.removeItem(key));
       }
       data.invoices = data.invoices.map(invoice => ({
         payment: "Pending",
@@ -2176,9 +2259,16 @@
       if ("serviceWorker" in navigator && location.protocol !== "file:") {
         navigator.serviceWorker.register("./service-worker.js").catch(console.error);
       }
-      if (!cloudConfigured()) setCloudStatus("Cloud: setup needed", "offline");
+      createLoginGate();
+      if (!cloudConfigured()) {
+        setCloudStatus("Cloud: setup needed", "offline");
+        document.getElementById("cloudLoginError").textContent = "Cloud database setup is missing.";
+      }
       else if (cloudSession?.access_token) loadCloudData();
-      else setCloudStatus("Cloud: sign in", "offline");
+      else {
+        setCloudStatus("Cloud: sign in", "offline");
+        showLoginGate(true);
+      }
     })();
   </script>
 </body>
