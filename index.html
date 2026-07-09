@@ -871,6 +871,19 @@
   </style>
 </head>
 <body>
+  <div class="cloud-login" id="cloudLogin">
+    <form class="cloud-login-panel" id="cloudLoginForm">
+      <div class="cloud-login-brand">
+        <img src="thoovam-icon.svg" alt="">
+        <div><strong>THOOVAM</strong><span>Billing & Accounts</span></div>
+      </div>
+      <h2>Sign in to your business</h2>
+      <label>Email<input id="cloudEmail" type="email" autocomplete="username" required></label>
+      <label>Password<input id="cloudPassword" type="password" autocomplete="current-password" required></label>
+      <p class="cloud-login-error" id="cloudLoginError"></p>
+      <button type="submit" id="cloudLoginButton">Sign in</button>
+    </form>
+  </div>
   <div class="app">
     <aside>
       <div class="brand">
@@ -1598,23 +1611,10 @@
       }
 
       function createLoginGate() {
-        if (document.getElementById("cloudLogin")) return;
-        document.body.insertAdjacentHTML("beforeend", `
-          <div class="cloud-login" id="cloudLogin">
-            <form class="cloud-login-panel" id="cloudLoginForm">
-              <div class="cloud-login-brand">
-                <img src="thoovam-icon.svg" alt="">
-                <div><strong>THOOVAM</strong><span>Billing & Accounts</span></div>
-              </div>
-              <h2>Sign in to your business</h2>
-              <label>Email<input id="cloudEmail" type="email" autocomplete="username" required></label>
-              <label>Password<input id="cloudPassword" type="password" autocomplete="current-password" required></label>
-              <p class="cloud-login-error" id="cloudLoginError"></p>
-              <button type="submit" id="cloudLoginButton">Sign in</button>
-            </form>
-          </div>
-        `);
-        document.getElementById("cloudLoginForm").addEventListener("submit", async event => {
+        const form = document.getElementById("cloudLoginForm");
+        if (!form || form.dataset.bound) return;
+        form.dataset.bound = "true";
+        form.addEventListener("submit", async event => {
           event.preventDefault();
           const button = document.getElementById("cloudLoginButton");
           const error = document.getElementById("cloudLoginError");
@@ -2255,8 +2255,10 @@
       loadSettings();
       updateEnhancedInvoice();
       renderAll();
-      if ("serviceWorker" in navigator && location.protocol !== "file:") {
-        navigator.serviceWorker.register("./service-worker.js").catch(console.error);
+      if ("serviceWorker" in navigator) {
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          registrations.forEach(registration => registration.unregister());
+        }).catch(console.error);
       }
       createLoginGate();
       if (!cloudConfigured()) {
