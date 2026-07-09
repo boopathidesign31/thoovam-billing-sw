@@ -80,6 +80,27 @@
     .cloud-login input { width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 6px; }
     .cloud-login button { width: 100%; margin-top: 20px; padding: 12px; border: 0; border-radius: 6px; background: var(--blue); color: #fff; font-weight: 700; cursor: pointer; }
     .cloud-login-error { min-height: 20px; margin: 12px 0 0; color: var(--red); font-size: 13px; }
+    .delete-lock {
+      position: fixed;
+      inset: 0;
+      z-index: 1100;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: rgba(15, 23, 42, .55);
+    }
+    .delete-lock[hidden] { display: none; }
+    .delete-lock-panel {
+      width: min(380px, 100%);
+      background: #fff;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+    .delete-lock-panel h2 { margin: 0 0 8px; }
+    .delete-lock-panel p { color: var(--muted); }
+    .delete-lock-panel input { width: 100%; padding: 11px; border: 1px solid var(--line); border-radius: 6px; }
+    .delete-lock-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
 
     button, input, select, textarea {
       font: inherit;
@@ -884,6 +905,18 @@
       <button type="submit" id="cloudLoginButton">Sign in</button>
     </form>
   </div>
+  <div class="delete-lock" id="deleteLock" hidden>
+    <form class="delete-lock-panel" id="deleteLockForm">
+      <h2>Removal Password</h2>
+      <p>Enter the password to continue with this delete or clear action.</p>
+      <input id="deleteLockPassword" type="password" inputmode="numeric" autocomplete="off" required>
+      <p class="cloud-login-error" id="deleteLockError"></p>
+      <div class="delete-lock-actions">
+        <button class="btn" type="button" id="cancelDeleteLock">Cancel</button>
+        <button class="btn primary" type="submit">Continue</button>
+      </div>
+    </form>
+  </div>
   <div class="app">
     <aside>
       <div class="brand">
@@ -930,6 +963,7 @@
           <div class="topline">
             <h1>Dashboard</h1>
             <div class="actions">
+              <button class="delete-btn" id="clearDashboardData"><span data-icon="trash"></span>Start Fresh</button>
               <button class="btn primary" data-screen-jump="sales"><span data-icon="plus"></span>New Invoice</button>
               <select class="select" aria-label="Period"><option>All amounts</option><option>This month</option><option>Last quarter</option></select>
             </div>
@@ -979,8 +1013,8 @@
             <article class="panel">
               <div class="panel-title">Expense Categories</div>
               <div class="panel-body donut-area">
-                <div class="donut" aria-label="Expense category donut chart"></div>
-                <div class="legend">
+                <div class="donut" id="expenseDonut" aria-label="Expense category donut chart"></div>
+                <div class="legend" id="expenseLegend">
                   <span><b><i class="swatch" style="background:#1f6fa3"></i>Rent</b><strong>17%</strong></span>
                   <span><b><i class="swatch" style="background:#358bc5"></i>Utilities</b><strong>12%</strong></span>
                   <span><b><i class="swatch" style="background:#77cfe3"></i>Supplies</b><strong>11%</strong></span>
@@ -1482,33 +1516,11 @@
       const defaults = {
         invoices: [],
         payments: [],
-        purchases: [
-          ["PB-008", "Kairali Supplies", "08/12/2023", 82500, 14850, "Pending"],
-          ["PB-009", "Coastal Packaging", "07/12/2023", 14200, 2556, "Paid"],
-          ["PB-010", "Prime Utilities", "06/12/2023", 9800, 1764, "Pending"]
-        ],
-        inventory: [
-          ["Product Box 1", "THV-PB1", 40, 50, 42000],
-          ["Key Product 2", "THV-KP2", 30, 40, 31000],
-          ["Product Comer-fon", "THV-PCF", 10, 20, 27000],
-          ["Product Groedr Supply", "THV-PGS", 20, 20, 54000],
-          ["Product Sals", "THV-PSL", 30, 10, 76000]
-        ],
-        expenses: [
-          ["EXP-001", "Kairali Supplies", "Rent", "08/12/2023", 18500, 3330],
-          ["EXP-002", "Prime Utilities", "Utilities", "07/12/2023", 8400, 1512],
-          ["EXP-003", "Coastal Packaging", "Supplies", "06/12/2023", 12700, 2286]
-        ],
-        customers: [
-          ["Ananya Traders", "32ABCDE1234F1Z5", "+91 98765 43210", 18500, "Active"],
-          ["Malabar Stores", "32EFGHI1234K1Z2", "+91 98765 11122", 0, "Active"],
-          ["Urban Retail", "29JKLMN1234P1Z8", "+91 98470 33344", 19700, "Due"]
-        ],
-        vendors: [
-          ["Kairali Supplies", "32SUPPL1234A1Z1", "+91 98950 12000", 82500, "Pending"],
-          ["Coastal Packaging", "32PACK1234B1Z2", "+91 94470 77440", 14200, "Paid"],
-          ["Prime Utilities", "32UTIL1234C1Z3", "+91 98460 55660", 9800, "Pending"]
-        ],
+        purchases: [],
+        inventory: [],
+        expenses: [],
+        customers: [],
+        vendors: [],
         settings: {
           businessName: "THOOVAM",
           gstin: "32THOOVAM2026Z5",
@@ -1641,6 +1653,50 @@
       function showLoginGate(show = true) {
         createLoginGate();
         document.getElementById("cloudLogin").hidden = !show;
+      }
+
+      function setupRemovalLock() {
+        let pendingButton = null;
+        let authorizedButton = null;
+        const lock = document.getElementById("deleteLock");
+        const form = document.getElementById("deleteLockForm");
+        const password = document.getElementById("deleteLockPassword");
+        const error = document.getElementById("deleteLockError");
+
+        document.addEventListener("click", event => {
+          const button = event.target.closest(".delete-btn");
+          if (!button) return;
+          if (authorizedButton === button) {
+            authorizedButton = null;
+            return;
+          }
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          pendingButton = button;
+          password.value = "";
+          error.textContent = "";
+          lock.hidden = false;
+          setTimeout(() => password.focus(), 0);
+        }, true);
+
+        form.addEventListener("submit", event => {
+          event.preventDefault();
+          if (password.value !== "0309") {
+            error.textContent = "Incorrect password.";
+            password.select();
+            return;
+          }
+          const button = pendingButton;
+          pendingButton = null;
+          lock.hidden = true;
+          authorizedButton = button;
+          button?.click();
+        });
+
+        document.getElementById("cancelDeleteLock").addEventListener("click", () => {
+          pendingButton = null;
+          lock.hidden = true;
+        });
       }
 
       async function loadCloudData() {
@@ -1975,6 +2031,32 @@
         document.querySelectorAll("[data-gst-output]").forEach(element => element.textContent = money(gstOutput));
         document.querySelectorAll("[data-gst-input]").forEach(element => element.textContent = money(gstInput));
         document.querySelectorAll("[data-gst-payable]").forEach(element => element.textContent = money(gstPayable));
+
+        const expenseTotals = data.expenses.reduce((totals, expense) => {
+          const category = expense[2] || "Others";
+          totals[category] = (totals[category] || 0) + (Number(expense[4]) || 0);
+          return totals;
+        }, {});
+        const expenseEntries = Object.entries(expenseTotals).filter(([, amount]) => amount > 0);
+        const expenseTotal = expenseEntries.reduce((sum, [, amount]) => sum + amount, 0);
+        const expenseColors = ["#1f6fa3", "#358bc5", "#77cfe3", "#35aa76", "#ff8f25", "#64748b"];
+        const expenseDonut = document.getElementById("expenseDonut");
+        const expenseLegend = document.getElementById("expenseLegend");
+        if (!expenseEntries.length) {
+          expenseDonut.style.background = "#e5edf3";
+          expenseLegend.innerHTML = "<span><b>No expenses entered</b><strong>0%</strong></span>";
+        } else {
+          let angle = 0;
+          const segments = expenseEntries.map(([, amount], index) => {
+            const start = angle;
+            angle += amount / expenseTotal * 360;
+            return `${expenseColors[index % expenseColors.length]} ${start}deg ${angle}deg`;
+          });
+          expenseDonut.style.background = `conic-gradient(${segments.join(",")})`;
+          expenseLegend.innerHTML = expenseEntries.map(([category, amount], index) =>
+            `<span><b><i class="swatch" style="background:${expenseColors[index % expenseColors.length]}"></i>${category}</b><strong>${Math.round(amount / expenseTotal * 100)}%</strong></span>`
+          ).join("");
+        }
 
         const now = new Date();
         const months = Array.from({ length: 6 }, (_, offset) => {
@@ -2329,6 +2411,20 @@
         renderLiveDashboard();
         alert("GST Report is calculated automatically from saved sales and purchase bills.");
       });
+      replaceButton("clearDashboardData", () => {
+        if (!confirm("Start fresh? This will permanently delete all sales, purchases, inventory, expenses, and payment entries from Supabase.")) return;
+        if (!confirm("This cannot be undone. Delete the existing business entries now?")) return;
+        data.invoices = [];
+        data.purchases = [];
+        data.inventory = [];
+        data.expenses = [];
+        data.payments = [];
+        data.customers.forEach(customer => { customer[3] = 0; customer[4] = "Clear"; });
+        data.vendors.forEach(vendor => { vendor[3] = 0; vendor[4] = "Clear"; });
+        saveAll();
+        renderAll();
+        alert("Dashboard cleared. New saved entries will update it automatically.");
+      });
 
       loadSettings();
       updateEnhancedInvoice();
@@ -2339,6 +2435,7 @@
         }).catch(console.error);
       }
       createLoginGate();
+      setupRemovalLock();
       if (!cloudConfigured()) {
         setCloudStatus("Cloud: setup needed", "offline");
         document.getElementById("cloudLoginError").textContent = "Cloud database setup is missing.";
