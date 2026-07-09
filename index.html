@@ -1146,8 +1146,8 @@
                   <div class="brand" style="margin:0 0 8px">
                     <img class="invoice-brand-logo" src="thoovam-logo.jpeg" alt="THOOVAM"><div><strong>THOOVAM</strong><span>THE HILLTOP HARVEST</span></div>
                   </div>
-                  <p>GSTIN: 32THOOVAM2026Z5</p>
-                  <p>Kerala, India</p>
+                  <p id="pvBusinessGstin">GSTIN: 32THOOVAM2026Z5</p>
+                  <p id="pvBusinessState">Kerala, India</p>
                 </div>
                 <div style="text-align:right">
                   <h2>TAX INVOICE</h2>
@@ -1177,7 +1177,7 @@
                 <div><span>GST</span><strong id="gstTotal">₹0</strong></div>
                 <div class="grand"><span>Grand Total</span><strong id="grandTotal">₹0</strong></div>
               </div>
-              <p class="footer-note">Thank you for your business. This invoice was generated from THOOVAM Billing & Accounts.</p>
+              <p class="footer-note" id="pvInvoiceFooter">Thank you for your business. This invoice was generated from THOOVAM Billing & Accounts.</p>
             </article>
           </div>
         </div>
@@ -2054,6 +2054,20 @@
         if (table) table.querySelector("thead").innerHTML = "<tr><th>Item</th><th>Qty</th><th>Unit</th><th>Rate</th><th>GST</th><th>Total</th></tr>";
       }
 
+      function updateInvoiceBusinessProfile() {
+        const businessName = data.settings.businessName || "THOOVAM";
+        const gstin = data.settings.gstin || "-";
+        const state = data.settings.state || "-";
+        const footer = data.settings.footer || "Thank you for your business.";
+        document.querySelectorAll("#invoicePreview .brand strong").forEach(el => { el.textContent = businessName; });
+        const businessGstin = document.getElementById("pvBusinessGstin");
+        const businessState = document.getElementById("pvBusinessState");
+        const invoiceFooter = document.getElementById("pvInvoiceFooter");
+        if (businessGstin) businessGstin.textContent = "GSTIN: " + gstin;
+        if (businessState) businessState.textContent = state + ", India";
+        if (invoiceFooter) invoiceFooter.textContent = footer;
+      }
+
       function createEnhancedLine(item = "", qty = 1, unit = "Kg", rate = 0, gst = 18) {
         const lineItems = document.getElementById("lineItems");
         const row = document.createElement("div");
@@ -2077,6 +2091,7 @@
       }
 
       function updateEnhancedInvoice() {
+        updateInvoiceBusinessProfile();
         document.getElementById("pvInvoiceNo").textContent = document.getElementById("invoiceNo").value || "Draft Invoice";
         document.getElementById("pvInvoiceDate").textContent = document.getElementById("invoiceDate").value || todayText();
         document.getElementById("pvCustomer").textContent = document.getElementById("customerName").value || "Customer";
@@ -2506,6 +2521,7 @@
         if (fields[2]) fields[2].value = data.settings.state || "Kerala";
         if (fields[3]) fields[3].value = data.settings.currency || "INR - ₹";
         if (fields[4]) fields[4].value = data.settings.footer || "";
+        updateInvoiceBusinessProfile();
       }
 
       function saveSettings() {
@@ -2519,6 +2535,8 @@
           footer: fields[4]?.value || ""
         };
         saveAll();
+        updateInvoiceBusinessProfile();
+        updateEnhancedInvoice();
         alert("Settings saved to Supabase.");
       }
 
