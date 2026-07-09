@@ -1689,6 +1689,8 @@
       function ensureVendor(name, gstin = "", phone = "") {
         const cleanName = (name || "").trim();
         if (!cleanName) return;
+        const deletedVendors = data.settings.deletedVendors || [];
+        if (deletedVendors.some(deletedName => sameName(deletedName, cleanName))) return;
         let row = data.vendors.find(vendor => sameName(vendor[0], cleanName));
         if (!row) {
           row = [cleanName, gstin || "", phone || "", 0, "Auto"];
@@ -1961,12 +1963,22 @@
         const due = type === "customers" ? 0 : (Number(ask("Opening payable amount", row[3])) || 0);
         const status = type === "customers" ? "Auto" : (ask("Status", row[4]) || "Active");
         list[index >= 0 ? index : list.length] = [name, gst, phone, due, status];
+        if (type === "vendors") {
+          data.settings.deletedVendors = (data.settings.deletedVendors || []).filter(deletedName => !sameName(deletedName, name));
+        }
         saveAll(); renderAll();
       }
 
       function removeItem(listName, index, label) {
         if (!data[listName][index]) return;
         if (!confirm(`Delete this ${label}?`)) return;
+        if (listName === "vendors") {
+          data.settings.deletedVendors = data.settings.deletedVendors || [];
+          const vendorName = data.vendors[index][0];
+          if (!data.settings.deletedVendors.some(name => sameName(name, vendorName))) {
+            data.settings.deletedVendors.push(vendorName);
+          }
+        }
         data[listName].splice(index, 1);
         saveAll(); renderAll();
       }
@@ -2146,7 +2158,16 @@
       replaceButton("deleteAllInventory", () => { if (confirm("Remove all inventory products?")) { data.inventory = []; saveAll(); renderAll(); } });
       replaceButton("deleteAllExpenses", () => { if (confirm("Remove all expenses?")) { data.expenses = []; saveAll(); renderAll(); } });
       replaceButton("deleteAllCustomers", () => { if (confirm("Remove all customers?")) { data.customers = []; saveAll(); renderAll(); } });
-      replaceButton("deleteAllVendors", () => { if (confirm("Remove all vendors?")) { data.vendors = []; saveAll(); renderAll(); } });
+      replaceButton("deleteAllVendors", () => {
+        if (!confirm("Remove all vendors? Purchase bills and expenses will remain saved.")) return;
+        data.settings.deletedVendors = [
+          ...(data.settings.deletedVendors || []),
+          ...data.vendors.map(vendor => vendor[0])
+        ].filter((name, index, names) => names.findIndex(item => sameName(item, name)) === index);
+        data.vendors = [];
+        saveAll();
+        renderAll();
+      });
       replaceButton("deleteAllPayments", () => { if (confirm("Remove all payment entries?")) { data.payments = []; saveAll(); renderAll(); } });
 
       loadSettings();
