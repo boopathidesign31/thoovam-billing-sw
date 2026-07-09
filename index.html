@@ -80,6 +80,27 @@
     .cloud-login input { width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 6px; }
     .cloud-login button { width: 100%; margin-top: 20px; padding: 12px; border: 0; border-radius: 6px; background: var(--blue); color: #fff; font-weight: 700; cursor: pointer; }
     .cloud-login-error { min-height: 20px; margin: 12px 0 0; color: var(--red); font-size: 13px; }
+    .delete-lock {
+      position: fixed;
+      inset: 0;
+      z-index: 1100;
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      background: rgba(15, 23, 42, .55);
+    }
+    .delete-lock[hidden] { display: none; }
+    .delete-lock-panel {
+      width: min(380px, 100%);
+      background: #fff;
+      border-radius: 8px;
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+    .delete-lock-panel h2 { margin: 0 0 8px; }
+    .delete-lock-panel p { color: var(--muted); }
+    .delete-lock-panel input { width: 100%; padding: 11px; border: 1px solid var(--line); border-radius: 6px; }
+    .delete-lock-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px; }
 
     button, input, select, textarea {
       font: inherit;
@@ -884,6 +905,18 @@
       <button type="submit" id="cloudLoginButton">Sign in</button>
     </form>
   </div>
+  <div class="delete-lock" id="deleteLock" hidden>
+    <form class="delete-lock-panel" id="deleteLockForm">
+      <h2>Removal Password</h2>
+      <p>Enter the password to continue with this delete or clear action.</p>
+      <input id="deleteLockPassword" type="password" inputmode="numeric" autocomplete="off" required>
+      <p class="cloud-login-error" id="deleteLockError"></p>
+      <div class="delete-lock-actions">
+        <button class="btn" type="button" id="cancelDeleteLock">Cancel</button>
+        <button class="btn primary" type="submit">Continue</button>
+      </div>
+    </form>
+  </div>
   <div class="app">
     <aside>
       <div class="brand">
@@ -930,6 +963,7 @@
           <div class="topline">
             <h1>Dashboard</h1>
             <div class="actions">
+              <button class="delete-btn" id="clearDashboardData"><span data-icon="trash"></span>Start Fresh</button>
               <button class="btn primary" data-screen-jump="sales"><span data-icon="plus"></span>New Invoice</button>
               <select class="select" aria-label="Period"><option>All amounts</option><option>This month</option><option>Last quarter</option></select>
             </div>
@@ -937,24 +971,24 @@
 
           <div class="dashboard">
             <article class="metric">
-              <div><p>Total Sales</p><strong id="salesMetric">₹1,45,000</strong></div>
+              <div><p>Total Sales</p><strong id="salesMetric">₹0</strong></div>
               <span class="mini blue" data-icon="trend"></span>
-              <span class="trend">↗ 1.37%</span>
+              <span class="trend">Live</span>
             </article>
             <article class="metric">
-              <div><p>Total Purchases</p><strong>₹82,500</strong></div>
+              <div><p>Total Purchases</p><strong id="purchaseMetric">₹0</strong></div>
               <span class="mini blue" data-icon="cart"></span>
-              <span class="trend">↗ 1.82%</span>
+              <span class="trend">Live</span>
             </article>
             <article class="metric">
-              <div><p>Net Profit</p><strong>₹62,500</strong></div>
+              <div><p>Net Profit</p><strong id="profitMetric">₹0</strong></div>
               <span class="mini green" data-icon="trend"></span>
-              <span class="trend">↗ 1.09%</span>
+              <span class="trend">Live</span>
             </article>
             <article class="metric">
-              <div><p>Current Stock Value</p><strong>₹2,30,000</strong></div>
+              <div><p>Current Stock Value</p><strong id="stockMetric">₹0</strong></div>
               <span class="mini green" data-icon="box"></span>
-              <span class="trend">↗ 30%</span>
+              <span class="trend">Live</span>
             </article>
 
             <article class="panel span-2">
@@ -963,7 +997,7 @@
                 <select class="select" aria-label="Sales period"><option>Last 6 Months</option><option>This Year</option></select>
               </div>
               <div class="panel-body chart-wrap">
-                <div class="bars" aria-label="Bar chart">
+                <div class="bars" id="monthlyChart" aria-label="Bar chart">
                   <div class="axis"><span>₹4,000</span><span>₹3,000</span><span>₹2,000</span><span>₹1,000</span><span>0</span></div>
                   <div class="bar-group"><div class="bar" style="height:67%"></div><div class="bar purchase" style="height:39%"></div></div>
                   <div class="bar-group"><div class="bar" style="height:78%"></div><div class="bar purchase" style="height:50%"></div></div>
@@ -972,15 +1006,15 @@
                   <div class="bar-group"><div class="bar" style="height:76%"></div><div class="bar purchase" style="height:60%"></div></div>
                   <div class="bar-group"><div class="bar" style="height:88%"></div><div class="bar purchase" style="height:70%"></div></div>
                 </div>
-                <div class="months"><span></span><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span></div>
+                <div class="months" id="monthlyLabels"><span></span><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span></div>
               </div>
             </article>
 
             <article class="panel">
               <div class="panel-title">Expense Categories</div>
               <div class="panel-body donut-area">
-                <div class="donut" aria-label="Expense category donut chart"></div>
-                <div class="legend">
+                <div class="donut" id="expenseDonut" aria-label="Expense category donut chart"></div>
+                <div class="legend" id="expenseLegend">
                   <span><b><i class="swatch" style="background:#1f6fa3"></i>Rent</b><strong>17%</strong></span>
                   <span><b><i class="swatch" style="background:#358bc5"></i>Utilities</b><strong>12%</strong></span>
                   <span><b><i class="swatch" style="background:#77cfe3"></i>Supplies</b><strong>11%</strong></span>
@@ -994,9 +1028,9 @@
               <div class="panel-title">GST Snapshot</div>
               <div class="panel-body gst-grid">
                 <div>Current month calculated</div>
-                <div class="gst-row"><span>Total GST Output</span><strong>₹26,100</strong></div>
-                <div class="gst-row"><span>Total GST Input (ITC)</span><strong>₹14,850</strong></div>
-                <div class="gst-row"><span>Net GST Payable</span><strong>₹11,250</strong></div>
+                <div class="gst-row"><span>Total GST Output</span><strong data-gst-output>₹0</strong></div>
+                <div class="gst-row"><span>Total GST Input (ITC)</span><strong data-gst-input>₹0</strong></div>
+                <div class="gst-row"><span>Net GST Payable</span><strong data-gst-payable>₹0</strong></div>
                 <a href="#gst" data-screen-jump="gst" style="color:#15577e;text-decoration:none;">GST Return Filing Overview →</a>
               </div>
             </article>
@@ -1014,9 +1048,9 @@
             <article class="panel span-2">
               <div class="panel-title"><span>GST Snapshot</span><span style="font-weight:500;color:#475569">Current Month →</span></div>
               <div class="panel-body gst-summary">
-                <div><p>Total GST Output</p><strong>₹26,100</strong></div>
-                <div><p>Total GST Input (ITC)</p><strong>₹14,850</strong></div>
-                <div><p>Net GST Payable</p><strong>₹11,250</strong></div>
+                <div><p>Total GST Output</p><strong data-gst-output>₹0</strong></div>
+                <div><p>Total GST Input (ITC)</p><strong data-gst-input>₹0</strong></div>
+                <div><p>Net GST Payable</p><strong data-gst-payable>₹0</strong></div>
               </div>
             </article>
 
@@ -1164,11 +1198,11 @@
         <div class="screen" id="gst">
           <div class="topline"><h1>GST Reports</h1><div class="actions"><button class="delete-btn" id="clearGstReport"><span data-icon="trash"></span>Remove</button><button class="btn primary"><span data-icon="download"></span>Export Report</button></div></div>
           <div class="dashboard">
-            <article class="metric"><div><p>Output Tax</p><strong>₹26,100</strong></div><span class="mini blue" data-icon="file"></span></article>
-            <article class="metric"><div><p>Input Credit</p><strong>₹14,850</strong></div><span class="mini green" data-icon="file"></span></article>
-            <article class="metric"><div><p>Payable</p><strong>₹11,250</strong></div><span class="mini blue" data-icon="receipt"></span></article>
+            <article class="metric"><div><p>Output Tax</p><strong data-gst-output>₹0</strong></div><span class="mini blue" data-icon="file"></span></article>
+            <article class="metric"><div><p>Input Credit</p><strong data-gst-input>₹0</strong></div><span class="mini green" data-icon="file"></span></article>
+            <article class="metric"><div><p>Payable</p><strong data-gst-payable>₹0</strong></div><span class="mini blue" data-icon="receipt"></span></article>
             <article class="metric"><div><p>Return Status</p><strong style="font-size:24px">Ready</strong></div><span class="mini green" data-icon="trend"></span></article>
-            <article class="panel span-full"><div class="panel-title">GST Filing Overview</div><div style="overflow:auto"><table><thead><tr><th>Return</th><th>Period</th><th>Sales Tax</th><th>ITC</th><th>Payable</th><th>Status</th></tr></thead><tbody><tr><td>GSTR-1</td><td>June 2026</td><td>₹26,100</td><td>-</td><td>-</td><td><span class="badge paid">Ready</span></td></tr><tr><td>GSTR-3B</td><td>June 2026</td><td>₹26,100</td><td>₹14,850</td><td>₹11,250</td><td><span class="badge pending">Review</span></td></tr></tbody></table></div></article>
+            <article class="panel span-full"><div class="panel-title">GST Filing Overview</div><div style="overflow:auto"><table><thead><tr><th>Return</th><th>Period</th><th>Sales Tax</th><th>ITC</th><th>Payable</th><th>Status</th></tr></thead><tbody id="gstReportRows"></tbody></table></div></article>
           </div>
         </div>
 
@@ -1482,33 +1516,11 @@
       const defaults = {
         invoices: [],
         payments: [],
-        purchases: [
-          ["PB-008", "Kairali Supplies", "08/12/2023", 82500, 14850, "Pending"],
-          ["PB-009", "Coastal Packaging", "07/12/2023", 14200, 2556, "Paid"],
-          ["PB-010", "Prime Utilities", "06/12/2023", 9800, 1764, "Pending"]
-        ],
-        inventory: [
-          ["Product Box 1", "THV-PB1", 40, 50, 42000],
-          ["Key Product 2", "THV-KP2", 30, 40, 31000],
-          ["Product Comer-fon", "THV-PCF", 10, 20, 27000],
-          ["Product Groedr Supply", "THV-PGS", 20, 20, 54000],
-          ["Product Sals", "THV-PSL", 30, 10, 76000]
-        ],
-        expenses: [
-          ["EXP-001", "Kairali Supplies", "Rent", "08/12/2023", 18500, 3330],
-          ["EXP-002", "Prime Utilities", "Utilities", "07/12/2023", 8400, 1512],
-          ["EXP-003", "Coastal Packaging", "Supplies", "06/12/2023", 12700, 2286]
-        ],
-        customers: [
-          ["Ananya Traders", "32ABCDE1234F1Z5", "+91 98765 43210", 18500, "Active"],
-          ["Malabar Stores", "32EFGHI1234K1Z2", "+91 98765 11122", 0, "Active"],
-          ["Urban Retail", "29JKLMN1234P1Z8", "+91 98470 33344", 19700, "Due"]
-        ],
-        vendors: [
-          ["Kairali Supplies", "32SUPPL1234A1Z1", "+91 98950 12000", 82500, "Pending"],
-          ["Coastal Packaging", "32PACK1234B1Z2", "+91 94470 77440", 14200, "Paid"],
-          ["Prime Utilities", "32UTIL1234C1Z3", "+91 98460 55660", 9800, "Pending"]
-        ],
+        purchases: [],
+        inventory: [],
+        expenses: [],
+        customers: [],
+        vendors: [],
         settings: {
           businessName: "THOOVAM",
           gstin: "32THOOVAM2026Z5",
@@ -1641,6 +1653,50 @@
       function showLoginGate(show = true) {
         createLoginGate();
         document.getElementById("cloudLogin").hidden = !show;
+      }
+
+      function setupRemovalLock() {
+        let pendingButton = null;
+        let authorizedButton = null;
+        const lock = document.getElementById("deleteLock");
+        const form = document.getElementById("deleteLockForm");
+        const password = document.getElementById("deleteLockPassword");
+        const error = document.getElementById("deleteLockError");
+
+        document.addEventListener("click", event => {
+          const button = event.target.closest(".delete-btn");
+          if (!button) return;
+          if (authorizedButton === button) {
+            authorizedButton = null;
+            return;
+          }
+          event.preventDefault();
+          event.stopImmediatePropagation();
+          pendingButton = button;
+          password.value = "";
+          error.textContent = "";
+          lock.hidden = false;
+          setTimeout(() => password.focus(), 0);
+        }, true);
+
+        form.addEventListener("submit", event => {
+          event.preventDefault();
+          if (password.value !== "0309") {
+            error.textContent = "Incorrect password.";
+            password.select();
+            return;
+          }
+          const button = pendingButton;
+          pendingButton = null;
+          lock.hidden = true;
+          authorizedButton = button;
+          button?.click();
+        });
+
+        document.getElementById("cancelDeleteLock").addEventListener("click", () => {
+          pendingButton = null;
+          lock.hidden = true;
+        });
       }
 
       async function loadCloudData() {
@@ -1939,8 +1995,105 @@
         showScreen("sales");
       }
 
+      function parseRecordDate(value) {
+        if (!value) return null;
+        const text = String(value);
+        const parts = text.split(/[\/-]/).map(Number);
+        if (text.includes("/") && parts.length === 3) {
+          const [day, month, year] = parts;
+          const parsed = new Date(year, month - 1, day);
+          return Number.isNaN(parsed.getTime()) ? null : parsed;
+        }
+        const iso = new Date(text);
+        if (!Number.isNaN(iso.getTime())) return iso;
+        return null;
+      }
+
+      function invoiceGst(invoice) {
+        return (invoice.items || []).reduce((sum, line) => {
+          const base = (Number(line.qty) || 0) * (Number(line.rate) || 0);
+          return sum + base * (Number(line.gst) || 0) / 100;
+        }, 0);
+      }
+
+      function renderLiveDashboard() {
+        const salesTotal = data.invoices.reduce((sum, invoice) => sum + (Number(invoice.total) || 0), 0);
+        const purchaseTotal = data.purchases.reduce((sum, bill) => sum + (Number(bill[3]) || 0) + (Number(bill[4]) || 0), 0);
+        const stockTotal = data.inventory.reduce((sum, product) => sum + (Number(product[4]) || 0), 0);
+        const gstOutput = data.invoices.reduce((sum, invoice) => sum + invoiceGst(invoice), 0);
+        const gstInput = data.purchases.reduce((sum, bill) => sum + (Number(bill[4]) || 0), 0);
+        const gstPayable = Math.max(gstOutput - gstInput, 0);
+
+        document.getElementById("salesMetric").textContent = money(salesTotal);
+        document.getElementById("purchaseMetric").textContent = money(purchaseTotal);
+        document.getElementById("profitMetric").textContent = money(salesTotal - purchaseTotal);
+        document.getElementById("stockMetric").textContent = money(stockTotal);
+        document.querySelectorAll("[data-gst-output]").forEach(element => element.textContent = money(gstOutput));
+        document.querySelectorAll("[data-gst-input]").forEach(element => element.textContent = money(gstInput));
+        document.querySelectorAll("[data-gst-payable]").forEach(element => element.textContent = money(gstPayable));
+
+        const expenseTotals = data.expenses.reduce((totals, expense) => {
+          const category = expense[2] || "Others";
+          totals[category] = (totals[category] || 0) + (Number(expense[4]) || 0);
+          return totals;
+        }, {});
+        const expenseEntries = Object.entries(expenseTotals).filter(([, amount]) => amount > 0);
+        const expenseTotal = expenseEntries.reduce((sum, [, amount]) => sum + amount, 0);
+        const expenseColors = ["#1f6fa3", "#358bc5", "#77cfe3", "#35aa76", "#ff8f25", "#64748b"];
+        const expenseDonut = document.getElementById("expenseDonut");
+        const expenseLegend = document.getElementById("expenseLegend");
+        if (!expenseEntries.length) {
+          expenseDonut.style.background = "#e5edf3";
+          expenseLegend.innerHTML = "<span><b>No expenses entered</b><strong>0%</strong></span>";
+        } else {
+          let angle = 0;
+          const segments = expenseEntries.map(([, amount], index) => {
+            const start = angle;
+            angle += amount / expenseTotal * 360;
+            return `${expenseColors[index % expenseColors.length]} ${start}deg ${angle}deg`;
+          });
+          expenseDonut.style.background = `conic-gradient(${segments.join(",")})`;
+          expenseLegend.innerHTML = expenseEntries.map(([category, amount], index) =>
+            `<span><b><i class="swatch" style="background:${expenseColors[index % expenseColors.length]}"></i>${category}</b><strong>${Math.round(amount / expenseTotal * 100)}%</strong></span>`
+          ).join("");
+        }
+
+        const now = new Date();
+        const months = Array.from({ length: 6 }, (_, offset) => {
+          const date = new Date(now.getFullYear(), now.getMonth() - (5 - offset), 1);
+          return {
+            year: date.getFullYear(),
+            month: date.getMonth(),
+            label: date.toLocaleString("en-IN", { month: "short" }),
+            sales: 0,
+            purchases: 0
+          };
+        });
+        const addToMonth = (dateValue, amount, field) => {
+          const date = parseRecordDate(dateValue);
+          if (!date) return;
+          const bucket = months.find(item => item.year === date.getFullYear() && item.month === date.getMonth());
+          if (bucket) bucket[field] += Number(amount) || 0;
+        };
+        data.invoices.forEach(invoice => addToMonth(invoice.date, invoice.total, "sales"));
+        data.purchases.forEach(bill => addToMonth(bill[2], (Number(bill[3]) || 0) + (Number(bill[4]) || 0), "purchases"));
+        const maximum = Math.max(...months.flatMap(item => [item.sales, item.purchases]), 1);
+        document.getElementById("monthlyChart").innerHTML = `
+          <div class="axis"><span>${money(maximum)}</span><span>${money(maximum * .75)}</span><span>${money(maximum * .5)}</span><span>${money(maximum * .25)}</span><span>0</span></div>
+          ${months.map(item => `<div class="bar-group"><div class="bar" title="Sales ${money(item.sales)}" style="height:${item.sales / maximum * 100}%"></div><div class="bar purchase" title="Purchases ${money(item.purchases)}" style="height:${item.purchases / maximum * 100}%"></div></div>`).join("")}
+        `;
+        document.getElementById("monthlyLabels").innerHTML = `<span></span>${months.map(item => `<span>${item.label}</span>`).join("")}`;
+
+        const period = now.toLocaleString("en-IN", { month: "long", year: "numeric" });
+        document.getElementById("gstReportRows").innerHTML = `
+          <tr><td>GSTR-1</td><td>${period}</td><td>${money(gstOutput)}</td><td>-</td><td>-</td><td><span class="badge paid">Ready</span></td></tr>
+          <tr><td>GSTR-3B</td><td>${period}</td><td>${money(gstOutput)}</td><td>${money(gstInput)}</td><td>${money(gstPayable)}</td><td><span class="badge ${gstPayable > 0 ? "pending" : "paid"}">${gstPayable > 0 ? "Payable" : "Nil"}</span></td></tr>
+        `;
+      }
+
       function renderAll() {
         syncPartiesAndBalances();
+        renderLiveDashboard();
         const customerDueByName = data.invoices.reduce((totals, invoice) => {
           const balance = Math.max((Number(invoice.total) || 0) - (Number(invoice.paidAmount) || 0), 0);
           if (balance > 0) {
@@ -2254,6 +2407,24 @@
         renderAll();
       });
       replaceButton("deleteAllPayments", () => { if (confirm("Remove all payment entries?")) { data.payments = []; saveAll(); renderAll(); } });
+      replaceButton("clearGstReport", () => {
+        renderLiveDashboard();
+        alert("GST Report is calculated automatically from saved sales and purchase bills.");
+      });
+      replaceButton("clearDashboardData", () => {
+        if (!confirm("Start fresh? This will permanently delete all sales, purchases, inventory, expenses, and payment entries from Supabase.")) return;
+        if (!confirm("This cannot be undone. Delete the existing business entries now?")) return;
+        data.invoices = [];
+        data.purchases = [];
+        data.inventory = [];
+        data.expenses = [];
+        data.payments = [];
+        data.customers.forEach(customer => { customer[3] = 0; customer[4] = "Clear"; });
+        data.vendors.forEach(vendor => { vendor[3] = 0; vendor[4] = "Clear"; });
+        saveAll();
+        renderAll();
+        alert("Dashboard cleared. New saved entries will update it automatically.");
+      });
 
       loadSettings();
       updateEnhancedInvoice();
@@ -2264,6 +2435,7 @@
         }).catch(console.error);
       }
       createLoginGate();
+      setupRemovalLock();
       if (!cloudConfigured()) {
         setCloudStatus("Cloud: setup needed", "offline");
         document.getElementById("cloudLoginError").textContent = "Cloud database setup is missing.";
