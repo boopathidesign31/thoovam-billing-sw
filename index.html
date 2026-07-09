@@ -987,7 +987,8 @@
                   <label>Payment Method<select id="invoicePaymentMethod"><option>Cash</option><option>Card</option><option>UPI</option></select></label>
                   <label>Payment Entry<input id="invoicePaidAmount" type="number" min="0" value="0"></label>
                   <label>Payment Status<select id="invoicePayment"><option>Pending</option><option>Paid</option></select></label>
-                  <label>Customer<input id="customerName" value="Ananya Traders"></label>
+                  <label>Customer<input id="customerName" list="customerNameList" value="Ananya Traders"></label>
+                  <datalist id="customerNameList"></datalist>
                   <label>GSTIN<input id="customerGst" value="32ABCDE1234F1Z5"></label>
                   <label style="grid-column:1/-1">Billing Address<textarea id="customerAddress">Kochi, Kerala</textarea></label>
                 </div>
@@ -1489,7 +1490,73 @@
         return `<button class="edit-btn" data-edit-${type}="${index}">Edit</button> <button class="delete-btn" data-remove-${type}="${index}">${icons.trash} Delete</button>`;
       }
 
+      function sameName(a, b) {
+        return (a || "").trim().toLowerCase() === (b || "").trim().toLowerCase();
+      }
+
+      function ensureCustomer(name, gstin = "", phone = "") {
+        const cleanName = (name || "").trim();
+        if (!cleanName) return;
+        let row = data.customers.find(customer => sameName(customer[0], cleanName));
+        if (!row) {
+          row = [cleanName, gstin || "", phone || "", 0, "Auto"];
+          data.customers.push(row);
+        } else {
+          if (gstin && !row[1]) row[1] = gstin;
+          if (phone && !row[2]) row[2] = phone;
+        }
+      }
+
+      function ensureVendor(name, gstin = "", phone = "") {
+        const cleanName = (name || "").trim();
+        if (!cleanName) return;
+        let row = data.vendors.find(vendor => sameName(vendor[0], cleanName));
+        if (!row) {
+          row = [cleanName, gstin || "", phone || "", 0, "Auto"];
+          data.vendors.push(row);
+        } else {
+          if (gstin && !row[1]) row[1] = gstin;
+          if (phone && !row[2]) row[2] = phone;
+        }
+      }
+
+      function syncPartiesAndBalances() {
+        data.invoices.forEach(invoice => ensureCustomer(invoice.customer, invoice.gstin));
+        data.purchases.forEach(bill => ensureVendor(bill[1]));
+        data.expenses.forEach(expense => ensureVendor(expense[1]));
+
+        const customerDueByName = data.invoices.reduce((totals, invoice) => {
+          const balance = Math.max((Number(invoice.total) || 0) - (Number(invoice.paidAmount) || 0), 0);
+          if (balance > 0) {
+            const key = (invoice.customer || "").trim().toLowerCase();
+            totals[key] = (totals[key] || 0) + balance;
+          }
+          return totals;
+        }, {});
+        const vendorPayableByName = data.purchases.reduce((totals, bill) => {
+          const billTotal = (Number(bill[3]) || 0) + (Number(bill[4]) || 0);
+          const balance = Math.max(billTotal - (Number(bill[5]) || 0), 0);
+          if (balance > 0) {
+            const key = (bill[1] || "").trim().toLowerCase();
+            totals[key] = (totals[key] || 0) + balance;
+          }
+          return totals;
+        }, {});
+
+        data.customers.forEach(customer => {
+          const due = customerDueByName[(customer[0] || "").trim().toLowerCase()] || 0;
+          customer[3] = due;
+          customer[4] = due > 0 ? "Due" : "Clear";
+        });
+        data.vendors.forEach(vendor => {
+          const payable = vendorPayableByName[(vendor[0] || "").trim().toLowerCase()] || 0;
+          vendor[3] = payable;
+          vendor[4] = payable > 0 ? "Pending" : "Clear";
+        });
+      }
+
       function saveAll() {
+        syncPartiesAndBalances();
         write("thoovamInvoices", data.invoices);
         write("thoovamPayments", data.payments);
         write("thoovamPurchases", data.purchases);
@@ -1613,6 +1680,7 @@
       }
 
       function renderAll() {
+        syncPartiesAndBalances();
         const customerDueByName = data.invoices.reduce((totals, invoice) => {
           const balance = Math.max((Number(invoice.total) || 0) - (Number(invoice.paidAmount) || 0), 0);
           if (balance > 0) {
@@ -1656,6 +1724,8 @@
           <tr><td>${name}</td><td>${gst}</td><td>${phone}</td><td>${money(vendorPayableByName[(name || "").trim().toLowerCase()] || due)}</td><td><span class="badge ${(vendorPayableByName[(name || "").trim().toLowerCase()] || 0) ? "pending" : "paid"}">${(vendorPayableByName[(name || "").trim().toLowerCase()] || 0) ? "Pending" : "Clear"}</span></td><td>${actionButtons("vendor", index)}</td></tr>
         `).join("");
         renderPaymentParties();
+        const customerNameList = document.getElementById("customerNameList");
+        if (customerNameList) customerNameList.innerHTML = data.customers.map(row => `<option value="${row[0]}"></option>`).join("");
         document.getElementById("paymentRows").innerHTML = data.payments.map((payment, index) => `
           <tr><td>${payment.date}</td><td>${payment.type}</td><td>${payment.name}</td><td>${payment.method}</td><td>${money(payment.amount)}</td><td>${money(payment.applied || 0)}</td><td><button class="delete-btn" data-delete-payment="${index}">${icons.trash} Delete</button></td></tr>
         `).join("");
@@ -1746,6 +1816,8 @@
           alert("Enter customer/vendor name and payment amount.");
           return;
         }
+        if (type === "Customer") ensureCustomer(name);
+        if (type === "Vendor") ensureVendor(name);
         const originalAmount = remaining;
         let applied = 0;
         const key = name.toLowerCase();
@@ -1817,6 +1889,13 @@
       createEnhancedLine("Product Box 1", 2, "Kg", 12500, 18);
       createEnhancedLine("Product Comer-fon", 1, "Liter", 18500, 18);
       ["invoiceNo", "invoiceDate", "invoicePaymentMethod", "invoicePaidAmount", "invoicePayment", "customerName", "customerGst", "customerAddress"].forEach(id => document.getElementById(id)?.addEventListener("input", updateEnhancedInvoice));
+      document.getElementById("customerName")?.addEventListener("blur", () => {
+        const name = document.getElementById("customerName").value.trim();
+        if (!name) return;
+        ensureCustomer(name, document.getElementById("customerGst").value);
+        saveAll();
+        renderAll();
+      });
 
       replaceButton("addLine", () => { createEnhancedLine("", 1, "Kg", 0, 18); updateEnhancedInvoice(); });
       if (!document.getElementById("findInvoice")) {
