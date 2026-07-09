@@ -1590,7 +1590,9 @@
           }
         }
         if (!response.ok) {
-          const details = await response.json().catch(() => ({}));
+          const errorText = await response.text();
+          let details = {};
+          try { details = errorText ? JSON.parse(errorText) : {}; } catch {}
           throw new Error(
             details.error_description ||
             details.message ||
@@ -1599,7 +1601,8 @@
             `Cloud error ${response.status}`
           );
         }
-        return response.status === 204 ? null : response.json();
+        const responseText = await response.text();
+        return responseText ? JSON.parse(responseText) : null;
       }
 
       async function signInCloud(email, password) {
