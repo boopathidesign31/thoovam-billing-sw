@@ -1518,7 +1518,8 @@
       };
       let cloudReady = false;
       let cloudTimer = null;
-      let cloudSession = read("thoovamCloudSession", null);
+      let cloudSession = null;
+      localStorage.removeItem("thoovamCloudSession");
       const cloudConfig = window.THOOVAM_CLOUD || {};
 
       function cloudSnapshot() {
@@ -1572,7 +1573,6 @@
           });
           if (refreshed.ok) {
             cloudSession = await refreshed.json();
-            write("thoovamCloudSession", cloudSession);
             return cloudRequest(path, { ...options, _retried: true });
           }
         }
@@ -1594,7 +1594,6 @@
           method: "POST",
           body: JSON.stringify({ email, password })
         });
-        write("thoovamCloudSession", cloudSession);
         await loadCloudData();
       }
 
