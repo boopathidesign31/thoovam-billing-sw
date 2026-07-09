@@ -286,6 +286,37 @@
       color: #475569;
     }
 
+    .search-results {
+      position: absolute;
+      top: calc(100% + 8px);
+      left: 0;
+      right: 0;
+      z-index: 80;
+      max-height: 360px;
+      overflow: auto;
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      box-shadow: var(--shadow);
+      padding: 6px;
+    }
+    .search-results[hidden] { display: none; }
+    .search-result {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px;
+      border: 0;
+      border-radius: 4px;
+      background: transparent;
+      color: var(--ink);
+      text-align: left;
+      cursor: pointer;
+    }
+    .search-result:hover { background: var(--soft); }
+    .search-result small { color: var(--muted); }
+
     .header-actions {
       margin-left: auto;
       display: flex;
@@ -962,6 +993,7 @@
         <div class="search">
           <span data-icon="search"></span>
           <input id="globalSearch" type="search" placeholder="Search invoices, bills, customers...">
+          <div class="search-results" id="globalSearchResults" hidden></div>
         </div>
         <div class="header-actions">
           <button class="icon-btn" aria-label="Help"><span data-icon="help"></span></button>
@@ -1712,6 +1744,111 @@
         });
       }
 
+      function setupGlobalSearch() {
+        const oldInput = document.getElementById("globalSearch");
+        const input = oldInput.cloneNode(true);
+        oldInput.replaceWith(input);
+        const results = document.getElementById("globalSearchResults");
+
+        const searchableRecords = () => [
+          ...data.invoices.map((row, index) => ({ screen: "sales", type: "invoice", index, title: `Invoice ${row.no}`, detail: `${row.customer} · ${money(row.total)}`, text: `${row.no} ${row.customer} ${(row.items || []).map(item => item.item).join(" ")}` })),
+          ...data.purchases.map((row, index) => ({ screen: "purchases", type: "purchase", index, title: `Purchase ${row[0]}`, detail: `${row[1]} · ${money((Number(row[3]) || 0) + (Number(row[4]) || 0))}`, text: `${row[0]} ${row[1]} ${row[2]}` })),
+          ...data.inventory.map((row, index) => ({ screen: "inventory", type: "stock", index, title: row[0], detail: `SKU ${row[1]} · Qty ${row[2]}`, text: `${row[0]} ${row[1]}` })),
+          ...data.expenses.map((row, index) => ({ screen: "expenses", type: "expense", index, title: `Expense ${row[0]}`, detail: `${row[1] || row[2]} · ${money(row[4])}`, text: row.join(" ") })),
+          ...data.customers.map((row, index) => ({ screen: "customers", type: "customer", index, title: row[0], detail: `Customer · ${row[1] || row[2] || ""}`, text: row.join(" ") })),
+          ...data.vendors.map((row, index) => ({ screen: "vendors", type: "vendor", index, title: row[0], detail: `Vendor · ${row[1] || row[2] || ""}`, text: row.join(" ") })),
+          ...data.payments.map((row, index) => ({ screen: "payments", type: "payment", index, title: `${row.type} payment`, detail: `${row.name} · ${money(row.amount)}`, text: `${row.type} ${row.name} ${row.method} ${row.date}` }))
+        ];
+
+        input.addEventListener("input", () => {
+          const query = input.value.trim().toLowerCase();
+          if (!query) {
+            results.hidden = true;
+            results.innerHTML = "";
+            return;
+          }
+          const matches = searchableRecords().filter(record => record.text.toLowerCase().includes(query)).slice(0, 12);
+          results.innerHTML = "";
+          matches.forEach(record => {
+            const button = document.createElement("button");
+            button.type = "button";
+            button.className = "search-result";
+            button.dataset.screen = record.screen;
+            button.dataset.type = record.type;
+            button.dataset.index = record.index;
+            const title = document.createElement("strong");
+            title.textContent = record.title;
+            const detail = document.createElement("small");
+            detail.textContent = record.detail;
+            button.append(title, detail);
+            results.appendChild(button);
+          });
+          if (!matches.length) results.innerHTML = '<div style="padding:12px;color:#64748b">No matching saved data</div>';
+          results.hidden = false;
+        });
+
+        results.addEventListener("click", event => {
+          const button = event.target.closest(".search-result");
+          if (!button) return;
+          const index = Number(button.dataset.index);
+          results.hidden = true;
+          input.value = "";
+          if (button.dataset.type === "invoice" && data.invoices[index]) loadInvoice(data.invoices[index]);
+          else showScreen(button.dataset.screen);
+        });
+
+        document.addEventListener("click", event => {
+          if (!event.target.closest(".search")) results.hidden = true;
+        });
+      }
+
+      function captureCloudDraft() {
+        data.settings.drafts = data.settings.drafts || {};
+        data.settings.drafts.invoice = invoicePayload();
+        data.settings.drafts.payment = {
+          type: document.getElementById("paymentPartyType")?.value || "Customer",
+          name: document.getElementById("paymentPartyName")?.value || "",
+          method: document.getElementById("paymentMethod")?.value || "Cash",
+          amount: document.getElementById("paymentAmount")?.value || "0",
+          date: document.getElementById("paymentDate")?.value || todayText()
+        };
+        const fields = document.querySelectorAll("#settings input, #settings textarea, #settings select");
+        data.settings = {
+          ...data.settings,
+          businessName: fields[0]?.value || data.settings.businessName || "",
+          gstin: fields[1]?.value || data.settings.gstin || "",
+          state: fields[2]?.value || data.settings.state || "",
+          currency: fields[3]?.value || data.settings.currency || "",
+          footer: fields[4]?.value || data.settings.footer || ""
+        };
+        saveAll();
+      }
+
+      function restoreCloudDrafts() {
+        const invoice = data.settings.drafts?.invoice;
+        if (invoice) loadInvoice(invoice, false);
+        const payment = data.settings.drafts?.payment;
+        if (payment) {
+          document.getElementById("paymentPartyType").value = payment.type || "Customer";
+          document.getElementById("paymentPartyName").value = payment.name || "";
+          document.getElementById("paymentMethod").value = payment.method || "Cash";
+          document.getElementById("paymentAmount").value = payment.amount || "0";
+          document.getElementById("paymentDate").value = payment.date || todayText();
+        }
+      }
+
+      function setupCloudAutosave() {
+        let timer;
+        const schedule = event => {
+          if (event.target.closest("#cloudLogin, #deleteLock, #globalSearch, #globalSearchResults")) return;
+          if (!event.target.matches("input, textarea, select")) return;
+          clearTimeout(timer);
+          timer = setTimeout(captureCloudDraft, 900);
+        };
+        document.addEventListener("input", schedule);
+        document.addEventListener("change", schedule);
+      }
+
       async function loadCloudData() {
         if (!cloudConfigured() || !cloudSession?.access_token) return;
         setCloudStatus("Cloud: connecting...");
@@ -1728,6 +1865,7 @@
           cloudReady = true;
           renderAll();
           loadSettings();
+          restoreCloudDrafts();
           showLoginGate(false);
           setCloudStatus("Cloud: synced");
         } catch (error) {
@@ -1992,7 +2130,7 @@
         };
       }
 
-      function loadInvoice(invoice) {
+      function loadInvoice(invoice, navigate = true) {
         document.getElementById("invoiceNo").value = invoice.no;
         document.getElementById("invoiceDate").value = invoice.date;
         if (document.getElementById("invoicePaymentMethod")) document.getElementById("invoicePaymentMethod").value = invoice.paymentMethod || "Cash";
@@ -2005,7 +2143,7 @@
         invoice.items.forEach(line => createEnhancedLine(line.item, line.qty, line.unit, line.rate, line.gst));
         if (!invoice.items.length) createEnhancedLine("", 1, "Kg", 0, 18);
         updateEnhancedInvoice();
-        showScreen("sales");
+        if (navigate) showScreen("sales");
       }
 
       function parseRecordDate(value) {
@@ -2291,6 +2429,7 @@
         }
 
         data.payments.push({ type, name, method, amount: originalAmount, applied, date });
+        if (data.settings.drafts) delete data.settings.drafts.payment;
         saveAll();
         renderAll();
         document.getElementById("paymentAmount").value = 0;
@@ -2309,6 +2448,7 @@
       function saveSettings() {
         const fields = document.querySelectorAll("#settings input, #settings textarea, #settings select");
         data.settings = {
+          ...data.settings,
           businessName: fields[0]?.value || "",
           gstin: fields[1]?.value || "",
           state: fields[2]?.value || "",
@@ -2316,14 +2456,13 @@
           footer: fields[4]?.value || ""
         };
         saveAll();
-        alert("Settings saved in this browser.");
+        alert("Settings saved to Supabase.");
       }
 
       makeInvoiceHistory();
       enhanceInvoiceTable();
       document.getElementById("lineItems").innerHTML = "";
-      createEnhancedLine("Product Box 1", 2, "Kg", 12500, 18);
-      createEnhancedLine("Product Comer-fon", 1, "Liter", 18500, 18);
+      createEnhancedLine("", 1, "Kg", 0, 18);
       ["invoiceNo", "invoiceDate", "invoicePaymentMethod", "invoicePaidAmount", "invoicePayment", "customerName", "customerGst", "customerAddress"].forEach(id => document.getElementById(id)?.addEventListener("input", updateEnhancedInvoice));
       document.getElementById("customerName")?.addEventListener("blur", () => {
         const name = document.getElementById("customerName").value.trim();
@@ -2352,6 +2491,7 @@
         const invoice = invoicePayload();
         const existing = data.invoices.findIndex(saved => saved.no === invoice.no);
         data.invoices[existing >= 0 ? existing : data.invoices.length] = invoice;
+        if (data.settings.drafts) delete data.settings.drafts.invoice;
         saveAll(); renderAll();
         alert(`Invoice ${invoice.no} saved. You can edit or reprint it from Saved Invoices.`);
       });
@@ -2449,6 +2589,8 @@
       }
       createLoginGate();
       setupRemovalLock();
+      setupGlobalSearch();
+      setupCloudAutosave();
       if (!cloudConfigured()) {
         setCloudStatus("Cloud: setup needed", "offline");
         document.getElementById("cloudLoginError").textContent = "Cloud database setup is missing.";
