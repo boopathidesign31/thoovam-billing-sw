@@ -1,4 +1,4 @@
-const CACHE = "thoovam-v3";
+const CACHE = "thoovam-v4";
 const APP_FILES = [
   "./",
   "./index.html",
