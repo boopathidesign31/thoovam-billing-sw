@@ -6,12 +6,7 @@
   <meta name="theme-color" content="#1f6fa3">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="thoovam-logo.jpeg" type="image/jpeg">
-  <script>
-    window.THOOVAM_CLOUD = {
-      url: "https://yipkvrnrzxqfdugbkvtk.supabase.co",
-      anonKey: "sb_publishable_TszkX7htqZHd4j5_jbjzzA_5CnT13_R"
-    };
-  </script>
+  <script src="cloud-config.js"></script>
   <title>THOOVAM Billing & Accounts</title>
   <style>
     :root {
@@ -79,7 +74,9 @@
     .cloud-login label { display: grid; gap: 7px; margin-top: 15px; font-weight: 700; }
     .cloud-login input { width: 100%; padding: 12px; border: 1px solid var(--line); border-radius: 6px; }
     .cloud-login button { width: 100%; margin-top: 20px; padding: 12px; border: 0; border-radius: 6px; background: var(--blue); color: #fff; font-weight: 700; cursor: pointer; }
-    .cloud-login-error { min-height: 20px; margin: 12px 0 0; color: var(--red); font-size: 13px; }
+    .cloud-login-error { min-height: 20px; margin: 12px 0 0; color: var(--red); font-size: 13px; line-height: 1.45; }
+    .cloud-login-help { margin: 10px 0 0; color: var(--muted); font-size: 12px; line-height: 1.45; }
+    .cloud-login-secondary { background: #e8eef3 !important; color: var(--ink) !important; margin-top: 10px !important; }
     .delete-lock {
       position: fixed;
       inset: 0;
@@ -947,6 +944,8 @@
       <label>Password<input id="cloudPassword" type="password" autocomplete="current-password" required></label>
       <p class="cloud-login-error" id="cloudLoginError"></p>
       <button type="submit" id="cloudLoginButton">Sign in</button>
+      <button type="button" class="cloud-login-secondary" id="offlineModeButton">Continue offline</button>
+      <p class="cloud-login-help">Offline entries stay on this device and sync after a successful cloud sign-in.</p>
     </form>
   </div>
   <div class="delete-lock" id="deleteLock" hidden>
@@ -1577,19 +1576,18 @@
 
       const fresh = value => JSON.parse(JSON.stringify(value));
       const data = {
-        invoices: fresh(defaults.invoices),
-        payments: fresh(defaults.payments),
-        purchases: fresh(defaults.purchases),
-        inventory: fresh(defaults.inventory),
-        expenses: fresh(defaults.expenses),
-        customers: fresh(defaults.customers),
-        vendors: fresh(defaults.vendors),
-        settings: fresh(defaults.settings)
+        invoices: read("thoovamInvoices", fresh(defaults.invoices)),
+        payments: read("thoovamPayments", fresh(defaults.payments)),
+        purchases: read("thoovamPurchases", fresh(defaults.purchases)),
+        inventory: read("thoovamInventory", fresh(defaults.inventory)),
+        expenses: read("thoovamExpenses", fresh(defaults.expenses)),
+        customers: read("thoovamCustomers", fresh(defaults.customers)),
+        vendors: read("thoovamVendors", fresh(defaults.vendors)),
+        settings: read("thoovamSettings", fresh(defaults.settings))
       };
       let cloudReady = false;
       let cloudTimer = null;
-      let cloudSession = null;
-      localStorage.removeItem("thoovamCloudSession");
+      let cloudSession = read("thoovamCloudSession", null);
       const cloudConfig = window.THOOVAM_CLOUD || {};
 
       function cloudSnapshot() {
@@ -1625,48 +1623,70 @@
           !cloudConfig.url.includes("YOUR_") && !cloudConfig.anonKey.includes("YOUR_");
       }
 
+      function saveCloudSession(session) {
+        cloudSession = session || null;
+        if (cloudSession) write("thoovamCloudSession", cloudSession);
+        else localStorage.removeItem("thoovamCloudSession");
+      }
+
+      function friendlyCloudError(error) {
+        if (error?.name === "AbortError") return "Connection timed out. Check internet access and whether the Supabase project is active.";
+        if (/Failed to fetch|NetworkError|Load failed/i.test(error?.message || "")) {
+          return "Cannot reach Supabase. Check internet, project status, project URL, firewall, and clear the old app cache.";
+        }
+        return error?.message || "Unknown cloud connection error.";
+      }
+
       async function cloudRequest(path, options = {}) {
-        const response = await fetch(`${cloudConfig.url}${path}`, {
-          ...options,
-          headers: {
-            apikey: cloudConfig.anonKey,
-            "Content-Type": "application/json",
-            ...(cloudSession?.access_token ? { Authorization: `Bearer ${cloudSession.access_token}` } : {}),
-            ...(options.headers || {})
-          }
-        });
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15000);
+        let response;
+        try {
+          response = await fetch(`${cloudConfig.url}${path}`, {
+            ...options,
+            signal: controller.signal,
+            cache: "no-store",
+            headers: {
+              apikey: cloudConfig.anonKey,
+              "Content-Type": "application/json",
+              ...(cloudSession?.access_token ? { Authorization: `Bearer ${cloudSession.access_token}` } : {}),
+              ...(options.headers || {})
+            }
+          });
+        } catch (error) {
+          throw new Error(friendlyCloudError(error));
+        } finally {
+          clearTimeout(timeout);
+        }
         if (response.status === 401 && cloudSession?.refresh_token && !options._retried) {
           const refreshed = await fetch(`${cloudConfig.url}/auth/v1/token?grant_type=refresh_token`, {
             method: "POST",
+            cache: "no-store",
             headers: { apikey: cloudConfig.anonKey, "Content-Type": "application/json" },
             body: JSON.stringify({ refresh_token: cloudSession.refresh_token })
           });
           if (refreshed.ok) {
-            cloudSession = await refreshed.json();
+            saveCloudSession(await refreshed.json());
             return cloudRequest(path, { ...options, _retried: true });
           }
+          saveCloudSession(null);
         }
         if (!response.ok) {
           const errorText = await response.text();
           let details = {};
           try { details = errorText ? JSON.parse(errorText) : {}; } catch {}
-          throw new Error(
-            details.error_description ||
-            details.message ||
-            details.msg ||
-            details.error ||
-            `Cloud error ${response.status}`
-          );
+          throw new Error(details.error_description || details.message || details.msg || details.error || `Cloud error ${response.status}`);
         }
         const responseText = await response.text();
         return responseText ? JSON.parse(responseText) : null;
       }
 
       async function signInCloud(email, password) {
-        cloudSession = await cloudRequest("/auth/v1/token?grant_type=password", {
+        const session = await cloudRequest("/auth/v1/token?grant_type=password", {
           method: "POST",
           body: JSON.stringify({ email, password })
         });
+        saveCloudSession(session);
         await loadCloudData();
       }
 
@@ -1687,11 +1707,18 @@
               document.getElementById("cloudPassword").value
             );
           } catch (loginError) {
-            error.textContent = loginError.message;
+            error.textContent = friendlyCloudError(loginError);
+            setCloudStatus("Cloud: sign-in failed", "error");
           } finally {
             button.disabled = false;
             button.textContent = "Sign in";
           }
+        });
+        document.getElementById("offlineModeButton")?.addEventListener("click", () => {
+          cloudReady = false;
+          showLoginGate(false);
+          setCloudStatus("Offline mode", "offline");
+          renderAll();
         });
       }
 
@@ -1872,6 +1899,7 @@
           cloudReady = false;
           showLoginGate(true);
           setCloudStatus("Cloud: connection failed", "error");
+          document.getElementById("cloudLoginError").textContent = friendlyCloudError(error);
           console.error(error);
         }
       }
@@ -1907,9 +1935,8 @@
         }
         if (cloudSession?.access_token) {
           if (confirm("Cloud is connected. Sign out from this device?")) {
-            cloudSession = null;
+            saveCloudSession(null);
             cloudReady = false;
-            localStorage.removeItem("thoovamCloudSession");
             setCloudStatus("Cloud: sign in", "offline");
             showLoginGate(true);
           }
@@ -1928,11 +1955,14 @@
       }
 
       function saveLocalOnly() {
-        [
-          "thoovamInvoices", "thoovamPayments", "thoovamPurchases",
-          "thoovamInventory", "thoovamExpenses", "thoovamCustomers",
-          "thoovamVendors", "thoovamSettings"
-        ].forEach(key => localStorage.removeItem(key));
+        write("thoovamInvoices", data.invoices);
+        write("thoovamPayments", data.payments);
+        write("thoovamPurchases", data.purchases);
+        write("thoovamInventory", data.inventory);
+        write("thoovamExpenses", data.expenses);
+        write("thoovamCustomers", data.customers);
+        write("thoovamVendors", data.vendors);
+        write("thoovamSettings", data.settings);
       }
       data.invoices = data.invoices.map(invoice => ({
         payment: "Pending",
@@ -2570,7 +2600,13 @@
       });
       replaceButton("saveInvoice", () => {
         const invoice = invoicePayload();
-        const existing = data.invoices.findIndex(saved => saved.no === invoice.no);
+        if (!invoice.no.trim()) return alert("Enter an invoice number.");
+        if (!invoice.customer.trim() || invoice.customer === "Customer") return alert("Enter the customer name.");
+        const validItems = invoice.items.filter(item => item.item.trim() && item.qty > 0 && item.rate >= 0);
+        if (!validItems.length) return alert("Add at least one valid invoice item with quantity and rate.");
+        invoice.items = validItems;
+        invoice.total = validItems.reduce((sum, line) => sum + (line.qty * line.rate * (1 + line.gst / 100)), 0);
+        const existing = data.invoices.findIndex(saved => saved.no.trim().toLowerCase() === invoice.no.trim().toLowerCase());
         data.invoices[existing >= 0 ? existing : data.invoices.length] = invoice;
         if (data.settings.drafts) delete data.settings.drafts.invoice;
         saveAll(); renderAll();
@@ -2669,10 +2705,10 @@
       loadSettings();
       updateEnhancedInvoice();
       renderAll();
-      if ("serviceWorker" in navigator) {
-        navigator.serviceWorker.getRegistrations().then(registrations => {
-          registrations.forEach(registration => registration.unregister());
-        }).catch(console.error);
+      if ("serviceWorker" in navigator && location.protocol !== "file:") {
+        navigator.serviceWorker.register("./service-worker.js", { updateViaCache: "none" })
+          .then(registration => registration.update())
+          .catch(console.error);
       }
       createLoginGate();
       setupRemovalLock();
