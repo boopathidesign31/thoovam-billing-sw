@@ -997,8 +997,7 @@
         <div class="header-actions">
           <button class="icon-btn" aria-label="Help"><span data-icon="help"></span></button>
           <button class="icon-btn" aria-label="Notifications"><span data-icon="bell"></span><span class="dot"></span></button>
-          <div class="avatar"><span data-icon="user"></span></div>
-          <span>⌄</span>
+          <button class="icon-btn" id="cloudAccountButton" aria-label="Cloud account" title="Cloud account / Sign out"><span data-icon="user"></span></button>
         </div>
       </header>
 
@@ -1251,16 +1250,17 @@
         </div>
 
         <div class="screen" id="reports">
-          <div class="topline"><h1>Business Reports</h1><div class="actions"><button class="delete-btn" id="clearBusinessReports"><span data-icon="trash"></span>Remove</button><button class="btn primary"><span data-icon="download"></span>Download</button></div></div>
-          <div class="split">
-            <article class="panel"><div class="panel-title">Profit & Loss</div><div class="panel-body gst-grid"><div class="gst-row"><span>Sales</span><strong>₹1,45,000</strong></div><div class="gst-row"><span>Purchases</span><strong>₹82,500</strong></div><div class="gst-row"><span>Expenses</span><strong>₹18,000</strong></div><div class="gst-row"><span>Net Profit</span><strong>₹44,500</strong></div></div></article>
-            <article class="panel"><div class="panel-title">Receivables & Payables</div><div class="panel-body gst-grid"><div class="gst-row"><span>Receivables</span><strong>₹38,200</strong></div><div class="gst-row"><span>Payables</span><strong>₹24,750</strong></div><div class="gst-row"><span>Cash Position</span><strong>₹13,450</strong></div></div></article>
+          <div class="topline"><h1>Business Reports</h1><div class="actions"><button class="delete-btn" id="clearBusinessReports"><span data-icon="trash"></span>Remove</button><button class="btn primary" id="downloadBusinessReport"><span data-icon="download"></span>Download</button></div></div>
+          <div class="split" id="businessReportPanels">
+            <article class="panel"><div class="panel-title">Profit & Loss</div><div class="panel-body gst-grid"><div class="gst-row"><span>Sales</span><strong id="reportSales">₹0</strong></div><div class="gst-row"><span>Purchases</span><strong id="reportPurchases">₹0</strong></div><div class="gst-row"><span>Expenses</span><strong id="reportExpenses">₹0</strong></div><div class="gst-row"><span>Net Profit</span><strong id="reportProfit">₹0</strong></div></div></article>
+            <article class="panel"><div class="panel-title">Receivables & Payables</div><div class="panel-body gst-grid"><div class="gst-row"><span>Receivables</span><strong id="reportReceivables">₹0</strong></div><div class="gst-row"><span>Payables</span><strong id="reportPayables">₹0</strong></div><div class="gst-row"><span>Cash Position</span><strong id="reportCash">₹0</strong></div></div></article>
           </div>
         </div>
 
         <div class="screen" id="settings">
           <div class="topline"><h1>Settings</h1><div class="actions"><button class="delete-btn" id="resetSettings"><span data-icon="trash"></span>Remove</button><button class="btn primary" id="saveSettings"><span data-icon="save"></span>Save Settings</button></div></div>
           <article class="panel"><div class="panel-title">Business Profile</div><div class="panel-body form-grid"><label>Business Name<input value="THOOVAM"></label><label>GSTIN<input value="32THOOVAM2026Z5"></label><label>State<select><option>Kerala</option><option>Tamil Nadu</option><option>Karnataka</option></select></label><label>Currency<input value="INR - ₹"></label><label style="grid-column:1/-1">Invoice Footer<textarea>Thank you for your business.</textarea></label></div></article>
+          <article class="panel"><div class="panel-title">Backup & Cloud</div><div class="panel-body"><div class="actions" style="justify-content:flex-start;flex-wrap:wrap"><button class="btn" id="backupData">Download Backup</button><button class="btn" id="restoreData">Restore Backup</button><button class="btn" id="syncNow">Sync Now</button><button class="delete-btn" id="signOutCloud">Sign Out</button><input id="restoreDataFile" type="file" accept="application/json" hidden></div><p class="muted" style="margin-top:12px">Backups contain your local business data in JSON format. Keep them private.</p></div></article>
         </div>
       </section>
     </main>
@@ -2554,6 +2554,71 @@
         updateInvoiceBusinessProfile();
       }
 
+      function reportSnapshot() {
+        const sales = data.invoices.reduce((sum, invoice) => sum + (Number(invoice.total) || 0), 0);
+        const purchases = data.purchases.reduce((sum, bill) => sum + (Number(bill[3]) || 0) + (Number(bill[4]) || 0), 0);
+        const expenses = data.expenses.reduce((sum, expense) => sum + (Number(expense[4]) || 0) + (Number(expense[5]) || 0), 0);
+        const receivables = data.invoices.reduce((sum, invoice) => sum + Math.max((Number(invoice.total) || 0) - (Number(invoice.paid) || 0), 0), 0);
+        const payables = data.purchases.reduce((sum, bill) => {
+          const total = (Number(bill[3]) || 0) + (Number(bill[4]) || 0);
+          return sum + Math.max(total - (Number(bill[5]) || 0), 0);
+        }, 0);
+        const customerPayments = data.payments.filter(payment => payment.type === "Customer").reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0);
+        const vendorPayments = data.payments.filter(payment => payment.type === "Vendor").reduce((sum, payment) => sum + (Number(payment.amount) || 0), 0);
+        return { sales, purchases, expenses, profit: sales - purchases - expenses, receivables, payables, cash: customerPayments - vendorPayments - expenses };
+      }
+
+      function renderBusinessReports() {
+        const report = reportSnapshot();
+        const ids = { reportSales: report.sales, reportPurchases: report.purchases, reportExpenses: report.expenses, reportProfit: report.profit, reportReceivables: report.receivables, reportPayables: report.payables, reportCash: report.cash };
+        Object.entries(ids).forEach(([id, value]) => { const element = document.getElementById(id); if (element) element.textContent = money(value); });
+      }
+
+      function downloadText(filename, text, type = "text/plain") {
+        const blob = new Blob([text], { type });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url; link.download = filename; link.click();
+        setTimeout(() => URL.revokeObjectURL(url), 1000);
+      }
+
+      function downloadBackup() {
+        const payload = { app: "THOOVAM Billing & Accounts", version: 3, exportedAt: new Date().toISOString(), data };
+        downloadText(`thoovam-backup-${todayText()}.json`, JSON.stringify(payload, null, 2), "application/json");
+      }
+
+      function restoreBackupFile(file) {
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const parsed = JSON.parse(String(reader.result || "{}"));
+            const restored = parsed.data || parsed;
+            if (!restored || !Array.isArray(restored.invoices) || !Array.isArray(restored.inventory)) throw new Error("Invalid THOOVAM backup file.");
+            if (!confirm("Replace current local data with this backup?")) return;
+            Object.keys(data).forEach(key => delete data[key]);
+            Object.assign(data, fresh(defaults), restored);
+            saveAll(); loadSettings(); renderAll();
+            alert("Backup restored successfully.");
+          } catch (error) { alert(error.message || "Unable to restore backup."); }
+        };
+        reader.readAsText(file);
+      }
+
+      function downloadBusinessReport() {
+        const r = reportSnapshot();
+        const rows = [["THOOVAM BUSINESS REPORT", todayText()], ["Sales", r.sales], ["Purchases", r.purchases], ["Expenses", r.expenses], ["Net Profit", r.profit], ["Receivables", r.receivables], ["Payables", r.payables], ["Cash Position", r.cash]];
+        const csv = "\uFEFF" + rows.map(row => row.map(value => `"${String(value).replaceAll('"', '""')}"`).join(",")).join("\r\n");
+        downloadText(`thoovam-business-report-${todayText()}.csv`, csv, "text/csv;charset=utf-8");
+      }
+
+      function signOutCloud() {
+        if (!confirm("Sign out from cloud account? Local data will remain on this device.")) return;
+        cloudSession = null;
+        localStorage.removeItem(CLOUD_SESSION_KEY);
+        setCloudStatus("Cloud: signed out", "offline");
+        showLoginGate(true);
+      }
+
       function saveSettings() {
         const fields = document.querySelectorAll("#settings input, #settings textarea, #settings select");
         data.settings = {
@@ -2648,6 +2713,13 @@
         renderLiveDashboard();
       });
       replaceButton("exportGstReport", exportGstReport);
+      replaceButton("downloadBusinessReport", downloadBusinessReport);
+      replaceButton("backupData", downloadBackup);
+      replaceButton("restoreData", () => document.getElementById("restoreDataFile")?.click());
+      document.getElementById("restoreDataFile")?.addEventListener("change", event => { const file = event.target.files?.[0]; if (file) restoreBackupFile(file); event.target.value = ""; });
+      replaceButton("syncNow", async () => { if (!cloudSession?.access_token) return alert("Sign in to Supabase first."); await pushCloudData(); alert("Cloud sync completed."); });
+      replaceButton("signOutCloud", signOutCloud);
+      replaceButton("cloudAccountButton", openCloudAccount);
 
       document.body.addEventListener("click", event => {
         const target = event.target.closest("[data-edit-invoice], [data-print-invoice], [data-delete-invoice], [data-edit-purchase], [data-remove-purchase], [data-edit-stock], [data-remove-stock], [data-edit-expense], [data-remove-expense], [data-edit-customer], [data-remove-customer], [data-edit-vendor], [data-remove-vendor], [data-delete-payment]");
